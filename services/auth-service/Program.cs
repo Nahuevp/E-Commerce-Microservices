@@ -22,14 +22,8 @@ if (!string.IsNullOrEmpty(databaseUrl))
     var dbName = uri.AbsolutePath.Trim('/');
     var dbPort = uri.Port > 0 ? uri.Port : 5432;
     
-    // Extract query parameters (sslmode, etc)
-    var queryParams = uri.Query.TrimStart('?');
-    
-    var connectionString = $"Host={uri.Host};Port={dbPort};Database={dbName};Username={userInfo[0]};Password={userInfo[1]}";
-    if (!string.IsNullOrEmpty(queryParams))
-    {
-        connectionString += ";" + queryParams.Replace("&", ";").Replace("%20", " ");
-    }
+    // Only use sslmode parameter, ignore others like channel_binding
+    var connectionString = $"Host={uri.Host};Port={dbPort};Database={dbName};Username={userInfo[0]};Password={userInfo[1]};sslmode=require";
     
     Console.WriteLine($"Connecting to database: Host={uri.Host}, Database={dbName}");
     builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;

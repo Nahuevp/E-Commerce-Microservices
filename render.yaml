@@ -15,5 +15,3 @@ services:
         value: Production
       - key: JWT_KEY
         generateValue: true
-      - key: DATABASE_URL
-        value: "postgresql://neondb_owner:npg_U3ToW0RsVOSc@ep-falling-art-a8l470fw-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require"

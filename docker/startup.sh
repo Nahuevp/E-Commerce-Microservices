@@ -3,28 +3,12 @@ set -e
 
 echo "Starting E-Commerce Microservices..."
 
-# Convert DATABASE_URL to connection string format
-# neon URL: postgresql://user:pass@host/db?sslmode=require
-# .NET espera: Host=host;Port=5432;Database=db;Username=user;Password=pass;sslmode=require
+# Use direct connection string (sslmode only, no channel_binding)
+export ConnectionStrings__DefaultConnection="Host=ep-falling-art-a8l470fw-pooler.eastus2.azure.neon.tech;Port=5432;Database=neondb;Username=neondb_owner;Password=npg_U3ToW0RsVOSc;sslmode=require"
 
-parse_db_url() {
-    local url="$1"
-    # Extraer componentes
-    local user=$(echo "$url" | sed -n 's|.*://\([^:]*\):.*|\1|p')
-    local pass=$(echo "$url" | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-    local host=$(echo "$url" | sed -n 's|.*@\([^/]*\)/.*|\1|p')
-    local db=$(echo "$url" | sed -n 's|.*/\([^?]*\)?.*|\1|p')
-    local params=$(echo "$url" | grep -o '\?.*' | sed 's/^?//')
-    
-    echo "Host=$host;Port=5432;Database=$db;Username=$user;Password=$pass;$params"
-}
-
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@localhost/postgres}"
 export JWT_KEY="${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_please_change_in_production}"
-export ConnectionStrings__DefaultConnection=$(parse_db_url "$DATABASE_URL")
 
-echo "DATABASE_URL: $DATABASE_URL"
-echo "Connection String: $ConnectionStrings__DefaultConnection"
+echo "Using direct connection string"
 
 # Start all services
 echo "Starting Auth Service on port 5001..."
