@@ -1,165 +1,26 @@
 # Render Blueprint - E-Commerce Microservices
-# https://render.com/docs/blueprint-spec
+# Single Web Service con Docker
 
 services:
-  # ==================== API Gateway ====================
   - type: web
-    name: api-gateway
-    env: docker
-    dockerfilePath: ./api-gateway/Dockerfile
+    name: ecommerce-microservices
+    runtime: docker
+    dockerfilePath: ./Dockerfile.all-in-one
     region: oregon
     plan: free
-    ports:
-      - port: 8080
-        healthCheckPath: /
+    healthCheckPath: /
+    
     envVars:
-      - key: PORT
-        value: 8080
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
-    routes:
-      - path: /api
-        services:
-          - name: auth-service
-            port: 8080
-          - name: product-service
-            port: 8080
-          - name: order-service
-            port: 8080
-          - name: cart-service
-            port: 8080
-          - name: payment-service
-            port: 8080
-          - name: notification-service
-            port: 8080
-          - name: inventory-service
-            port: 8080
+      - key: JWT_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: "postgresql://neondb_owner:npg_U3ToW0RsVOSc@ep-falling-art-a8l470fw-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require"
 
-  # ==================== Auth Service ====================
-  - type: web
-    name: auth-service
-    env: docker
-    dockerfilePath: ./services/auth-service/Dockerfile
-    region: oregon
-    plan: free
-    envVars:
-      - key: PORT
-        value: 8080
-      - key: ASPNETCORE_ENVIRONMENT
-        value: Production
-      - key: ConnectionStrings__DefaultConnection
-        sync: false
-      - key: Jwt__Key
-        generateValue: 32
-    disk:
-      name: postgres-auth
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 1
-
-  # ==================== Product Service ====================
-  - type: web
-    name: product-service
-    env: docker
-    dockerfilePath: ./services/product-service/Dockerfile
-    region: oregon
-    plan: free
-    envVars:
-      - key: PORT
-        value: 8080
-      - key: ASPNETCORE_ENVIRONMENT
-        value: Production
-      - key: ConnectionStrings__DefaultConnection
-        sync: false
-      - key: Jwt__Key
-        sync: false
-
-  # ==================== Order Service ====================
-  - type: web
-    name: order-service
-    env: docker
-    dockerfilePath: ./services/order-service/Dockerfile
-    region: oregon
-    plan: free
-    envVars:
-      - key: PORT
-        value: 8080
-      - key: ASPNETCORE_ENVIRONMENT
-        value: Production
-      - key: ConnectionStrings__DefaultConnection
-        sync: false
-      - key: Jwt__Key
-        sync: false
-
-  # ==================== Cart Service ====================
-  - type: web
-    name: cart-service
-    env: docker
-    dockerfilePath: ./services/cart-service/Dockerfile
-    region: oregon
-    plan: free
-    envVars:
-      - key: PORT
-        value: 8080
-      - key: ASPNETCORE_ENVIRONMENT
-        value: Production
-      - key: ConnectionStrings__DefaultConnection
-        sync: false
-      - key: Jwt__Key
-        sync: false
-
-  # ==================== Payment Service ====================
-  - type: web
-    name: payment-service
-    env: docker
-    dockerfilePath: ./services/payment-service/Dockerfile
-    region: oregon
-    plan: free
-    envVars:
-      - key: PORT
-        value: 8080
-      - key: ASPNETCORE_ENVIRONMENT
-        value: Production
-      - key: ConnectionStrings__DefaultConnection
-        sync: false
-      - key: Jwt__Key
-        sync: false
-
-  # ==================== Notification Service ====================
-  - type: web
-    name: notification-service
-    env: docker
-    dockerfilePath: ./services/notification-service/Dockerfile
-    region: oregon
-    plan: free
-    envVars:
-      - key: PORT
-        value: 8080
-      - key: ASPNETCORE_ENVIRONMENT
-        value: Production
-      - key: ConnectionStrings__DefaultConnection
-        sync: false
-      - key: Jwt__Key
-        sync: false
-
-  # ==================== Inventory Service ====================
-  - type: web
-    name: inventory-service
-    env: docker
-    dockerfilePath: ./services/inventory-service/Dockerfile
-    region: oregon
-    plan: free
-    envVars:
-      - key: PORT
-        value: 8080
-      - key: ASPNETCORE_ENVIRONMENT
-        value: Production
-      - key: ConnectionStrings__DefaultConnection
-        sync: false
-      - key: Jwt__Key
-        sync: false
-
-databases:
-  - name: ecommerce-postgres
-    databaseName: ecommerce
-    plan: free
-    ipAllowList: []
+    # Health check
+    healthCheck:
+      path: /
+      interval: 30
+      timeout: 10
+      retries: 3
