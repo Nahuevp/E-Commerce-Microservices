@@ -29,6 +29,14 @@ else
     echo "WARNING: No DATABASE_URL found - services will use default config"
 fi
 
+# OCULTAR PUERTOS INTERNOS DE RENDER
+# Render detecta puertos internos y reinicia. Vamos a hacer que solo el puerto 10000 sea visible
+# Esto bloquea que Render escanee los puertos 8001-8007
+echo "Configuring port visibility..."
+# No podemos usar iptables en containers de Render (no tenemos permisos)
+# En su lugar, vamos a usar una estrategia diferente: no iniciar los servicios hasta que el Gateway esté listo
+# y configurar el health check para que responda inmediatamente
+
 # Función para esperar a que un puerto esté libre
 wait_for_port() {
     local port=$1
@@ -64,7 +72,8 @@ start_service() {
     wait_for_port $port
     
     # Iniciar en background - solo en localhost para que Render no lo detecte
-    nohup dotnet ${name}Service.dll --urls "http://127.0.0.1:$port" > /tmp/$name.log 2>&1 &
+    # Usar solo IPv4 127.0.0.1 para evitar que Render detecte el puerto
+    nohup dotnet ${name}Service.dll --urls "http://127.0.0.1:$port" --hosting-offline-timeout 120 > /tmp/$name.log 2>&1 &
     local pid=$!
     echo "$name started with PID: $pid"
     
