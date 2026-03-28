@@ -179,18 +179,30 @@ namespace CartService.Controllers
         [Authorize]
         public async Task<IActionResult> Checkout(int cartId, [FromBody] CheckoutRequest request)
         {
+            _logger.LogInformation("Checkout started for cartId={CartId}, CardNumber={Card}", 
+                cartId, string.IsNullOrEmpty(request.CardNumber) ? "EMPTY" : "provided");
+            
             var cart = await _context.Carts
                 .Include(c => c.Items)
                 .FirstOrDefaultAsync(c => c.Id == cartId);
 
             if (cart == null)
+            {
+                _logger.LogWarning("Cart not found: {CartId}", cartId);
                 return NotFound("Cart not found");
+            }
 
             if (!cart.Items.Any())
+            {
+                _logger.LogWarning("Cart is empty: {CartId}", cartId);
                 return BadRequest(new CheckoutFailureResponse 
                 { 
                     Error = "Cart is empty" 
                 });
+            }
+            
+            _logger.LogInformation("Cart has {ItemCount} items, total amount: {Amount}", 
+                cart.Items.Count, cart.Items.Sum(i => i.Quantity * i.Price));
 
             // Get user ID from JWT claims
             var userIdClaim = User.FindFirst("userId") ?? User.FindFirst("sub");
@@ -306,9 +318,15 @@ namespace CartService.Controllers
                     cardNumber = request.CardNumber
                 };
 
+                _logger.LogInformation("Sending payment request: orderId={OrderId}, amount={Amount}, cardNumber={Card}", 
+                    paymentRequest.orderId, paymentRequest.amount, 
+                    string.IsNullOrEmpty(paymentRequest.cardNumber) ? "EMPTY" : "provided");
+
                 var paymentResponse = await httpClient.PostAsJsonAsync(
                     $"{PaymentServiceUrl}/api/payments",
                     paymentRequest);
+                
+                _logger.LogInformation("Payment response status: {Status}", paymentResponse.StatusCode);
 
                 if (!paymentResponse.IsSuccessStatusCode)
                 {
