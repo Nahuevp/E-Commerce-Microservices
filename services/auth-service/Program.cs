@@ -16,10 +16,11 @@ if (!string.IsNullOrEmpty(databaseUrl))
     var dbName = uri.AbsolutePath.Trim('/');
     var dbPort = uri.Port > 0 ? uri.Port : 5432;
     
-    // Only use sslmode parameter, ignore others like channel_binding
+    // Remove problematic query parameters like channel_binding
     var connectionString = $"Host={uri.Host};Port={dbPort};Database={dbName};Username={userInfo[0]};Password={userInfo[1]};sslmode=require";
     
     Console.WriteLine($"AUTH SERVICE - Connecting to: Host={uri.Host}, Database={dbName}, Port={dbPort}");
+    Console.WriteLine($"AUTH SERVICE - Connection string (masked): Host={uri.Host};Port={dbPort};Database={dbName};Username={userInfo[0]};Password=***");
     builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
 }
 else
