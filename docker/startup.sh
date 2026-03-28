@@ -45,6 +45,32 @@ wait_for_port() {
     echo "Port $port is free"
 }
 
+# Iniciar servicios en background - capturar logs
+start_service() {
+    local name=$1
+    local path=$2
+    local port=$3
+    
+    echo "Starting $name on port $port..."
+    cd /app/services/$path
+    
+    # Esperar a que el puerto esté libre
+    wait_for_port $port
+    
+    # Iniciar en background con stdout/stderr capturado
+    dotnet ${name}Service.dll --urls "http://0.0.0.0:$port" 2>&1 | tee /tmp/$name.log &
+    echo "$name started with PID: $!"
+    
+    # Esperar a que initialize
+    sleep 5
+    
+    # Mostrar logs si hay errores
+    if grep -qi "error\|exception\|fail\|crit" /tmp/$name.log 2>/dev/null; then
+        echo "=== $name ERRORS ==="
+        grep -i "error\|exception\|fail\|crit" /tmp/$name.log | head -20
+    fi
+}
+
 # Iniciar servicios en background (excepto Gateway)
 start_service() {
     local name=$1
