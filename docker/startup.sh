@@ -13,41 +13,43 @@ export JWT_KEY="${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_
 
 echo "Using PORT: $PORT"
 
-# Función para iniciar un servicio con retry infinito
-start_service() {
-    local name=$1
-    local path=$2
-    local port=$3
-    
-    echo "Starting $name on port $port..."
-    cd /app/services/$path
-    
-    while true; do
-        dotnet *.dll --urls "http://0.0.0.0:$port"
-        echo "$name crashed, restarting in 5s..."
-        sleep 5
-    done &
-}
-
-# Iniciar servicios en puertos únicos
-start_service "Auth Service" "auth" "8001" &
-start_service "Product Service" "product" "8002" &
-start_service "Order Service" "order" "8003" &
-start_service "Cart Service" "cart" "8004" &
-start_service "Payment Service" "payment" "8005" &
-start_service "Notification Service" "notification" "8006" &
-start_service "Inventory Service" "inventory" "8007" &
-
-echo "Waiting for services to initialize..."
-sleep 60
-
+# Iniciar API Gateway primero en puerto 8080
 echo "Starting API Gateway on port 8080..."
 cd /app/services/gateway
-while true; do
-    dotnet ApiGateway.dll --urls "http://0.0.0.0:8080"
-    echo "API Gateway crashed, restarting in 5s..."
-    sleep 5
-done &
+dotnet ApiGateway.dll --urls "http://0.0.0.0:8080" &
+sleep 5
+
+# Iniciar servicios
+echo "Starting Auth Service on port 8001..."
+cd /app/services/auth
+dotnet AuthService.dll --urls "http://0.0.0.0:8001" &
+
+echo "Starting Product Service on port 8002..."
+cd /app/services/product
+dotnet ProductService.dll --urls "http://0.0.0.0:8002" &
+
+echo "Starting Order Service on port 8003..."
+cd /app/services/order
+dotnet OrderService.dll --urls "http://0.0.0.0:8003" &
+
+echo "Starting Cart Service on port 8004..."
+cd /app/services/cart
+dotnet CartService.dll --urls "http://0.0.0.0:8004" &
+
+echo "Starting Payment Service on port 8005..."
+cd /app/services/payment
+dotnet PaymentService.dll --urls "http://0.0.0.0:8005" &
+
+echo "Starting Notification Service on port 8006..."
+cd /app/services/notification
+dotnet NotificationService.dll --urls "http://0.0.0.0:8006" &
+
+echo "Starting Inventory Service on port 8007..."
+cd /app/services/inventory
+dotnet InventoryService.dll --urls "http://0.0.0.0:8007" &
+
+echo "Waiting for services..."
+sleep 60
 
 echo "Starting nginx..."
 nginx -g 'daemon off;'
