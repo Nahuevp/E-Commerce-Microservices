@@ -1,0 +1,148 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "${AUTH_PORT:-5001}:${PORT:-80}"
+    environment:
+      - ConnectionStrings__DefaultConnection=${DATABASE_URL:-Host=postgres;Port=5432;Database=AuthDb;Username=postgres;Password=password123}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=${PORT:-80}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    ports:
+      - "${PRODUCT_PORT:-5002}:${PORT:-80}"
+    environment:
+      - ConnectionStrings__DefaultConnection=${DATABASE_URL:-Host=postgres;Port=5432;Database=ProductDb;Username=postgres;Password=password123}
+      - Jwt__Key=${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_which_needs_to_be_at_least_32_bytes_please_change_in_production}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=${PORT:-80}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    ports:
+      - "${ORDER_PORT:-5003}:${PORT:-80}"
+    environment:
+      - ConnectionStrings__DefaultConnection=${DATABASE_URL:-Host=postgres;Port=5432;Database=OrderDb;Username=postgres;Password=password123}
+      - Jwt__Key=${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_which_needs_to_be_at_least_32_bytes_please_change_in_production}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=${PORT:-80}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  cart-service:
+    build:
+      context: ./services/cart-service
+      dockerfile: Dockerfile
+    ports:
+      - "${CART_PORT:-5004}:${PORT:-80}"
+    environment:
+      - ConnectionStrings__DefaultConnection=${DATABASE_URL:-Host=postgres;Port=5432;Database=CartDb;Username=postgres;Password=password123}
+      - Jwt__Key=${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_which_needs_to_be_at_least_32_bytes_please_change_in_production}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=${PORT:-80}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "${PAYMENT_PORT:-5005}:${PORT:-80}"
+    environment:
+      - ConnectionStrings__DefaultConnection=${DATABASE_URL:-Host=postgres;Port=5432;Database=PaymentDb;Username=postgres;Password=password123}
+      - Jwt__Key=${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_which_needs_to_be_at_least_32_bytes_please_change_in_production}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=${PORT:-80}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "${NOTIFICATION_PORT:-5006}:${PORT:-80}"
+    environment:
+      - ConnectionStrings__DefaultConnection=${DATABASE_URL:-Host=postgres;Port=5432;Database=NotificationDb;Username=postgres;Password=password123}
+      - Jwt__Key=${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_which_needs_to_be_at_least_32_bytes_please_change_in_production}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=${PORT:-80}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  inventory-service:
+    build:
+      context: ./services/inventory-service
+      dockerfile: Dockerfile
+    ports:
+      - "${INVENTORY_PORT:-5007}:${PORT:-80}"
+    environment:
+      - ConnectionStrings__DefaultConnection=${DATABASE_URL:-Host=postgres;Port=5432;Database=InventoryDb;Username=postgres;Password=password123}
+      - Jwt__Key=${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_which_needs_to_be_at_least_32_bytes_please_change_in_production}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=${PORT:-80}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "${GATEWAY_PORT:-5000}:${PORT:-80}"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=${PORT:-80}
+    depends_on:
+      - auth-service
+      - product-service
+      - order-service
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./client:/usr/share/nginx/html:ro
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:

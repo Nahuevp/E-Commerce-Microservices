@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservices Shop</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        primaryHover: '#4f46e5',
+                        secondary: '#8b5cf6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
+    <div id="app">
+        <!-- Header -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <!-- Logo -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg">
+                            <span class="text-white font-bold text-xl">M</span>
+                        </div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent hidden sm:block">
+                            Microservices Shop
+                        </h1>
+                    </div>
+                    
+                    <!-- Navigation Tabs -->
+                    <nav id="main-nav" class="hidden flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+                        <button id="nav-products" class="nav-tab active px-4 py-2 rounded-md text-sm font-medium transition" data-view="dashboard">
+                            Products
+                        </button>
+                        <button id="nav-orders" class="nav-tab px-4 py-2 rounded-md text-sm font-medium transition" data-view="orders">
+                            My Orders
+                        </button>
+                    </nav>
+
+                    <!-- Right Side Actions -->
+                    <div class="flex items-center gap-3">
+                        <!-- User Info (visible when logged in) -->
+                        <div id="user-info" class="hidden flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span id="user-name" class="text-sm font-medium text-slate-700">User</span>
+                        </div>
+                        
+                        <!-- Cart Button -->
+                        <button id="btn-open-cart" class="relative p-2.5 rounded-xl hover:bg-slate-100 transition group">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-700 group-hover:text-primary transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span id="cart-badge" class="absolute -top-1 -right-1 bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center hidden shadow-md">0</span>
+                        </button>
+                        
+                        <!-- Logout Button -->
+                        <button id="btn-logout" class="hidden btn-logout flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span class="hidden sm:inline">Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+            <!-- Auth Section -->
+            <section id="auth-section" class="visible">
+                <div class="min-h-[calc(100vh-150px)] flex items-center justify-center py-12">
+                    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 w-full max-w-md">
+                        <!-- Logo -->
+                        <div class="flex items-center justify-center gap-3 mb-6">
+                            <div class="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg">
+                                <span class="text-white font-bold text-2xl">M</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Auth Toggle -->
+                        <div class="flex bg-slate-100 p-1 rounded-xl mb-6">
+                            <button id="toggle-login" class="toggle-btn active flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition">Sign In</button>
+                            <button id="toggle-register" class="toggle-btn flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition">Register</button>
+                        </div>
+                        
+                        <h2 id="auth-title" class="text-2xl font-bold text-center mb-2">Welcome Back</h2>
+                        <p id="auth-subtitle" class="text-slate-500 text-center mb-6">Sign in to your account</p>
+                        
+                        <form id="auth-form">
+                            <div class="mb-5">
+                                <label for="email" class="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                                <input type="email" id="email" required placeholder="user@example.com" 
+                                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition">
+                            </div>
+                            <div class="mb-5">
+                                <label for="password" class="block text-sm font-medium text-slate-700 mb-2">Password</label>
+                                <input type="password" id="password" required placeholder="Enter your password"
+                                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition">
+                            </div>
+                            <button type="submit" id="btn-auth-submit" class="btn primary w-full py-3.5 mt-2">Sign In</button>
+                            <p id="auth-message" class="message mt-4"></p>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Section - Products -->
+            <section id="dashboard-section" class="hidden">
+                <div class="pt-8">
+                    <!-- Products Panel -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <h2 class="text-xl font-bold text-slate-900">Available Products</h2>
+                            <button id="btn-toggle-add-product" class="btn secondary text-sm">Add Product</button>
+                        </div>
+
+                        <div id="add-product-form-container" class="hidden mb-6 p-6 bg-slate-50 rounded-xl border border-slate-200">
+                            <h3 id="form-title" class="text-lg font-semibold mb-4">New Product</h3>
+                            <form id="add-product-form">
+                                <input type="hidden" id="prod-id" value="">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label for="prod-name" class="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                                        <input type="text" id="prod-name" required placeholder="e.g. Laptop"
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                                    </div>
+                                    <div>
+                                        <label for="prod-price" class="block text-sm font-medium text-slate-700 mb-1">Price</label>
+                                        <input type="number" id="prod-price" step="0.01" required placeholder="99.99"
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                                    </div>
+                                    <div>
+                                        <label for="prod-stock" class="block text-sm font-medium text-slate-700 mb-1">Stock</label>
+                                        <input type="number" id="prod-stock" required placeholder="10"
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                                    </div>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button type="submit" id="btn-save-product" class="btn primary">Save Product</button>
+                                    <button type="button" id="btn-cancel-edit" class="btn secondary hidden">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="products-list" class="grid-list">
+                            <!-- Products injected here -->
+                            <p class="loading">Loading products...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- My Orders Section -->
+            <section id="orders-section" class="hidden">
+                <div class="pt-8">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <h2 class="text-xl font-bold text-slate-900 mb-6">My Orders</h2>
+                        <div id="orders-list" class="orders-grid">
+                            <!-- Orders injected here -->
+                            <p class="loading">Loading orders...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Service Status Panel -->
+    <div id="service-status" class="status-panel hidden">
+        <div class="status-header">
+            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Services</h4>
+            <button id="btn-refresh-status" class="btn-icon" title="Refresh">⟳</button>
+        </div>
+        <div id="services-list"></div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="cart-modal-header">
+                <h2>Your Cart</h2>
+                <button class="cart-close-btn close-cart">&times;</button>
+            </div>
+            <div id="cart-items" class="cart-items-list">
+                <!-- Cart items injected here -->
+            </div>
+            <div id="cart-empty" class="cart-empty hidden text-center py-12">
+                <div class="text-6xl mb-4 opacity-50">🛒</div>
+                <p class="text-slate-500 mb-4">Your cart is empty</p>
+                <button id="btn-continue-shopping" class="btn secondary">Continue Shopping</button>
+            </div>
+            <div id="cart-summary" class="cart-summary hidden border-t-2 border-slate-100 pt-6">
+                <div class="cart-total-row flex justify-between text-lg font-bold mb-5">
+                    <span>Total</span>
+                    <span id="cart-total-price" class="text-primary bg-primary/10 px-3 py-1 rounded-lg">$0.00</span>
+                </div>
+                <button id="btn-checkout" class="btn primary w-full py-3">Proceed to Checkout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Wizard Modal -->
+    <div id="checkout-modal" class="modal hidden">
+        <div class="modal-content checkout-modal-content max-w-2xl">
+            <span class="close close-checkout fixed top-4 right-4 w-9 h-9 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 cursor-pointer text-xl">&times;</span>
+            <h2 class="text-xl font-bold text-center mb-2">Checkout</h2>
+            <div class="wizard mt-6">
+                <!-- Wizard Steps -->
+                <div class="wizard-steps flex items-center justify-center mb-10 relative">
+                    <div class="absolute top-5 left-[15%] right-[15%] h-0.5 bg-slate-200 -z-0"></div>
+                    <div class="step relative z-10 flex flex-col items-center gap-2 px-4 py-2 opacity-50 transition" data-step="1">
+                        <span class="step-icon w-11 h-11 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center text-xl transition">📋</span>
+                        <span class="step-label text-xs font-bold uppercase text-slate-500 tracking-wide">Review</span>
+                    </div>
+                    <div class="step relative z-10 flex flex-col items-center gap-2 px-4 py-2 opacity-50 transition" data-step="2">
+                        <span class="step-icon w-11 h-11 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center text-xl transition">💳</span>
+                        <span class="step-label text-xs font-bold uppercase text-slate-500 tracking-wide">Payment</span>
+                    </div>
+                    <div class="step relative z-10 flex flex-col items-center gap-2 px-4 py-2 opacity-50 transition" data-step="3">
+                        <span class="step-icon w-11 h-11 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center text-xl transition">✓</span>
+                        <span class="step-label text-xs font-bold uppercase text-slate-500 tracking-wide">Confirm</span>
+                    </div>
+                </div>
+                
+                <!-- Wizard Content -->
+                <div class="wizard-content min-h-[320px]">
+                    <!-- Step 1: Cart Review -->
+                    <div id="checkout-step-1" class="wizard-step active">
+                        <h3 class="text-lg font-semibold mb-4">Review Your Order</h3>
+                        <div id="checkout-items" class="checkout-items-list mb-6 max-h-[220px] overflow-y-auto"></div>
+                        <div class="checkout-summary bg-slate-50 rounded-xl p-5 mb-6 border border-slate-100">
+                            <div class="checkout-total-row flex justify-between py-2 text-sm">
+                                <span>Subtotal</span>
+                                <span id="checkout-subtotal">$0.00</span>
+                            </div>
+                            <div class="checkout-total-row flex justify-between py-2 text-sm">
+                                <span>Shipping</span>
+                                <span class="text-green-600 font-medium">Free</span>
+                            </div>
+                            <div class="checkout-total-row total flex justify-between py-3 border-t-2 border-slate-200 mt-2 text-xl font-bold">
+                                <span>Total</span>
+                                <span id="checkout-total" class="text-primary">$0.00</span>
+                            </div>
+                        </div>
+                        <div class="wizard-actions flex gap-4 mt-6">
+                            <button id="btn-step1-next" class="btn primary flex-1 py-3">Proceed to Payment →</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Payment -->
+                    <div id="checkout-step-2" class="wizard-step hidden">
+                        <h3 class="text-lg font-semibold mb-4">Payment Details</h3>
+                        <form id="payment-form" class="mb-6">
+                            <div class="mb-4">
+                                <label for="card-number" class="block text-sm font-medium text-slate-700 mb-2">Card Number</label>
+                                <input type="text" id="card-number" required placeholder="4242 4242 4242 4242" maxlength="19"
+                                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition">
+                                <small class="text-xs text-slate-400 mt-1 block">Test cards: 4111111111111111, 5555555555554444, 4242424242424242</small>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="card-expiry" class="block text-sm font-medium text-slate-700 mb-2">Expiry</label>
+                                    <input type="text" id="card-expiry" required placeholder="MM/YY" maxlength="5"
+                                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition">
+                                </div>
+                                <div>
+                                    <label for="card-cvc" class="block text-sm font-medium text-slate-700 mb-2">CVC</label>
+                                    <input type="text" id="card-cvc" required placeholder="123" maxlength="4"
+                                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition">
+                                </div>
+                            </div>
+                        </form>
+                        <div class="bg-amber-50 text-amber-800 px-4 py-3 rounded-lg text-sm text-center mb-6 flex items-center justify-center gap-2">
+                            <span>💡</span> Cards starting with 4000 will be declined (test simulation)
+                        </div>
+                        <div class="checkout-summary bg-slate-50 rounded-xl p-5 mb-6 border border-slate-100">
+                            <div class="checkout-total-row total flex justify-between py-2 text-xl font-bold">
+                                <span>Amount to Pay</span>
+                                <span id="payment-amount" class="text-primary">$0.00</span>
+                            </div>
+                        </div>
+                        <div class="wizard-actions flex gap-4 mt-6">
+                            <button id="btn-step2-prev" class="btn secondary flex-1 py-3">← Back</button>
+                            <button id="btn-submit-payment" class="btn primary flex-1 py-3">Pay Now</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Confirmation -->
+                    <div id="checkout-step-3" class="wizard-step hidden">
+                        <div class="confirmation-success text-center py-8">
+                            <div class="success-icon w-20 h-20 bg-gradient-to-br from-green-500 to-green-400 text-white rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-lg">✓</div>
+                            <h3 class="text-2xl font-bold text-green-600 mb-2">Order Confirmed!</h3>
+                            <p class="text-slate-500 text-lg">Thank you for your purchase</p>
+                        </div>
+                        <div class="confirmation-details bg-slate-50 rounded-xl p-5 my-6 border border-slate-100">
+                            <div class="confirmation-row flex justify-between py-3 border-b border-slate-200">
+                                <span class="text-slate-500 text-sm">Order ID</span>
+                                <span id="confirmation-order-id" class="font-bold text-slate-800">#---</span>
+                            </div>
+                            <div class="confirmation-row flex justify-between py-3">
+                                <span class="text-slate-500 text-sm">Transaction ID</span>
+                                <span id="confirmation-transaction-id" class="font-bold text-slate-800">#---</span>
+                            </div>
+                        </div>
+                        <div class="wizard-actions flex gap-4 mt-6">
+                            <button id="btn-finish-checkout" class="btn primary flex-1 py-3">Continue Shopping</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[2000] flex flex-col gap-2 max-w-[400px]"></div>
+
+    <!-- Single Toast (backwards compatibility) -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
