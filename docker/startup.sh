@@ -104,7 +104,7 @@ echo "=========================================="
 # Esperar a que todos los servicios estén completamente inicializados
 # Esto es crítico para evitar que el Gateway intente conectar a servicios que aún no están listos
 echo "Waiting for services to initialize..."
-sleep 15
+sleep 30
 
 # Iniciar API Gateway en FOREGROUND (proceso principal en el puerto de Render)
 echo "Starting API Gateway on port $PORT..."
