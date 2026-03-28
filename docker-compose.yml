@@ -129,10 +129,21 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - PORT=${PORT:-80}
+      - AUTH_SERVICE_URL=http://auth-service:80
+      - PRODUCT_SERVICE_URL=http://product-service:80
+      - ORDER_SERVICE_URL=http://order-service:80
+      - CART_SERVICE_URL=http://cart-service:80
+      - PAYMENT_SERVICE_URL=http://payment-service:80
+      - NOTIFICATION_SERVICE_URL=http://notification-service:80
+      - INVENTORY_SERVICE_URL=http://inventory-service:80
     depends_on:
       - auth-service
       - product-service
       - order-service
+      - cart-service
+      - payment-service
+      - notification-service
+      - inventory-service
 
   nginx:
     image: nginx:alpine
