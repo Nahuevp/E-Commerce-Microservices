@@ -494,6 +494,7 @@ namespace CartService.Controllers
         /// <summary>
         /// Credit card number for payment processing
         /// </summary>
+        [System.Text.Json.Serialization.JsonPropertyName("cardNumber")]
         public string CardNumber { get; set; } = string.Empty;
     }
 
