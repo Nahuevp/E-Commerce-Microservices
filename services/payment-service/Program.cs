@@ -11,14 +11,21 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenAnyIP(int.Parse(port));
 });
 
-// Railway: Convert DATABASE_URL to Npgsql format if present
+// Convert DATABASE_URL to Npgsql format if present
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 if (!string.IsNullOrEmpty(databaseUrl))
 {
-    // Railway provides DATABASE_URL in format: postgres://user:password@host:5432/database
     var uri = new Uri(databaseUrl);
     var userInfo = uri.UserInfo.Split(':');
-    var connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={userInfo[0]};Password={userInfo[1]}";
+    var dbName = uri.AbsolutePath.Trim('/');
+    var dbPort = uri.Port > 0 ? uri.Port : 5432;
+    var queryParams = uri.Query.TrimStart('?');
+    var connectionString = $"Host={uri.Host};Port={dbPort};Database={dbName};Username={userInfo[0]};Password={userInfo[1]}";
+    if (!string.IsNullOrEmpty(queryParams))
+    {
+        connectionString += ";" + queryParams.Replace("&", ";").Replace("%20", " ");
+    }
+    Console.WriteLine($"Connecting to database: Host={uri.Host}, Database={dbName}");
     builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
 }
 

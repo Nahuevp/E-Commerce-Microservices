@@ -3,38 +3,64 @@ set -e
 
 echo "Starting E-Commerce Microservices..."
 
-# Configuration
-export JWT_KEY="${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_please_change_in_production}"
-export ConnectionStrings__DefaultConnection="${DATABASE_URL:-Host=localhost;Port=5432;Database=ecommerce;Username=postgres;Password=password123}"
+# Convert DATABASE_URL to connection string format
+# neon URL: postgresql://user:pass@host/db?sslmode=require
+# .NET espera: Host=host;Port=5432;Database=db;Username=user;Password=pass;sslmode=require
 
-# Function to run a service in background
-run_service() {
-    local name=$1
-    local path=$2
-    local port=$3
+parse_db_url() {
+    local url="$1"
+    # Extraer componentes
+    local user=$(echo "$url" | sed -n 's|.*://\([^:]*\):.*|\1|p')
+    local pass=$(echo "$url" | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+    local host=$(echo "$url" | sed -n 's|.*@\([^/]*\)/.*|\1|p')
+    local db=$(echo "$url" | sed -n 's|.*/\([^?]*\)?.*|\1|p')
+    local params=$(echo "$url" | grep -o '\?.*' | sed 's/^?//')
     
-    echo "Starting $name on port $port..."
-    cd /app/services/$path
-    dotnet .dll --urls "http://0.0.0.0:$port" &
+    echo "Host=$host;Port=5432;Database=$db;Username=$user;Password=$pass;$params"
 }
 
-# Wait a bit for postgres if using internal DB
-sleep 2
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@localhost/postgres}"
+export JWT_KEY="${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_please_change_in_production}"
+export ConnectionStrings__DefaultConnection=$(parse_db_url "$DATABASE_URL")
 
-# Start all services in background
-run_service "Auth Service" "auth" "5001" &
-run_service "Product Service" "product" "5002" &
-run_service "Order Service" "order" "5003" &
-run_service "Cart Service" "cart" "5004" &
-run_service "Payment Service" "payment" "5005" &
-run_service "Notification Service" "notification" "5006" &
-run_service "Inventory Service" "inventory" "5007" &
-run_service "API Gateway" "gateway" "5000" &
+echo "DATABASE_URL: $DATABASE_URL"
+echo "Connection String: $ConnectionStrings__DefaultConnection"
 
-# Wait for services to start
-sleep 5
+# Start all services
+echo "Starting Auth Service on port 5001..."
+cd /app/services/auth
+dotnet AuthService.dll --urls "http://0.0.0.0:5001" &
+
+echo "Starting Product Service on port 5002..."
+cd /app/services/product
+dotnet ProductService.dll --urls "http://0.0.0.0:5002" &
+
+echo "Starting Order Service on port 5003..."
+cd /app/services/order
+dotnet OrderService.dll --urls "http://0.0.0.0:5003" &
+
+echo "Starting Cart Service on port 5004..."
+cd /app/services/cart
+dotnet CartService.dll --urls "http://0.0.0.0:5004" &
+
+echo "Starting Payment Service on port 5005..."
+cd /app/services/payment
+dotnet PaymentService.dll --urls "http://0.0.0.0:5005" &
+
+echo "Starting Notification Service on port 5006..."
+cd /app/services/notification
+dotnet NotificationService.dll --urls "http://0.0.0.0:5006" &
+
+echo "Starting Inventory Service on port 5007..."
+cd /app/services/inventory
+dotnet InventoryService.dll --urls "http://0.0.0.0:5007" &
+
+echo "Starting API Gateway on port 5000..."
+cd /app/services/gateway
+dotnet ApiGateway.dll --urls "http://0.0.0.0:5000" &
+
+echo "Waiting for services to start..."
+sleep 15
 
 echo "All services started. Starting nginx..."
-
-# Start nginx in foreground
 nginx -g 'daemon off;'
