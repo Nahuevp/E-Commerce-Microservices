@@ -16,10 +16,14 @@ unset HTTPS_PORTS
 export Jwt__Key="${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_please_change_in_production}"
 echo "JWT Key configured: ${Jwt__Key:0:10}..."
 
-# Si DATABASE_URL está presente, los servicios ya lo manejan
+# Pass DATABASE_URL to all services via environment
 if [ -n "$DATABASE_URL" ]; then
-    echo "DATABASE_URL detected - services will parse it"
+    echo "DATABASE_URL detected: ${DATABASE_URL:0:30}..."
+    export ConnectionStrings__DefaultConnection="FROM_DATABASE_URL"
 fi
+
+# Also ensure Neon URL format works - some services might need it parsed
+export NEON_DATABASE_URL="$DATABASE_URL"
 
 # Función para esperar a que un puerto esté libre
 wait_for_port() {
@@ -81,4 +85,4 @@ echo "=========================================="
 # Iniciar API Gateway en FOREGROUND (proceso principal en el puerto de Render)
 echo "Starting API Gateway on port $PORT..."
 cd /app/services/gateway
-exec dotnet ApiGateway.dll --urls "http://0.0.0.0:$PORT"
+exec dotnet ApiGateway.dll --urls "http://0.0.0.0:$PORT" 2>&1

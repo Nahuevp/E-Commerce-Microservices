@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Convert DATABASE_URL to Npgsql format if present
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+Console.WriteLine($"AUTH SERVICE - DATABASE_URL: {(string.IsNullOrEmpty(databaseUrl) ? "NOT SET" : "SET")}");
 if (!string.IsNullOrEmpty(databaseUrl))
 {
     var uri = new Uri(databaseUrl);
@@ -18,8 +19,13 @@ if (!string.IsNullOrEmpty(databaseUrl))
     // Only use sslmode parameter, ignore others like channel_binding
     var connectionString = $"Host={uri.Host};Port={dbPort};Database={dbName};Username={userInfo[0]};Password={userInfo[1]};sslmode=require";
     
-    Console.WriteLine($"Connecting to database: Host={uri.Host}, Database={dbName}");
+    Console.WriteLine($"AUTH SERVICE - Connecting to: Host={uri.Host}, Database={dbName}, Port={dbPort}");
     builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
+}
+else
+{
+    Console.WriteLine("AUTH SERVICE - Using default connection from config");
+    Console.WriteLine($"AUTH SERVICE - DefaultConnection: {builder.Configuration["ConnectionStrings:DefaultConnection"]?.Substring(0, 20) ?? "NULL"}");
 }
 
 builder.Services.AddControllers();
@@ -47,6 +53,7 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
         }));
 
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "super_secret_key_that_is_long_enough_for_hmac_sha256_which_needs_to_be_at_least_32_bytes";
+Console.WriteLine($"AUTH SERVICE - JWT Key loaded: {(string.IsNullOrEmpty(builder.Configuration["Jwt:Key"]) ? "USING DEFAULT" : "FROM CONFIG")}");
 var keyBytes = Encoding.ASCII.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
