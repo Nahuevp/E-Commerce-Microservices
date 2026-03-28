@@ -1,6 +1,12 @@
 # Render Blueprint - E-Commerce Microservices
 # Single Web Service con Docker
 
+databases:
+  - name: ecommerce-db
+    databaseName: ecommerce
+    plan: free
+    region: oregon
+
 services:
   - type: web
     name: ecommerce-microservices
@@ -15,3 +21,9 @@ services:
         value: Production
       - key: JWT_KEY
         generateValue: true
+      - key: DATABASE_URL
+        # IMPORTANTE: Render pasa la connection string automáticamente desde la DB
+        # No necesitas valor aquí - se infiere del servicio de base de datos
+        fromDatabase:
+          name: ecommerce-db
+          property: connectionString

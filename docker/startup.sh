@@ -4,26 +4,30 @@ echo "=========================================="
 echo "E-Commerce Microservices - Starting..."
 echo "=========================================="
 
-# Puerto que Render asigna (externo)
-export PORT=${PORT:-10000}
-echo "Render assigned PORT: $PORT"
+# Puerto que Render asigna - USAR EXACTAMENTE LO QUE RENDER PASA
+# Render pasa el puerto como variable PORT - NO hardcodear
+if [ -z "$PORT" ]; then
+    echo "WARNING: PORT not set, using default 10000"
+    export PORT=10000
+else
+    echo "Render assigned PORT: $PORT"
+fi
 
 # Limpiar variables que interfieren
 unset HTTP_PORTS
 unset HTTPS_PORTS
 
-# JWT Key - .NET expects Jwt__Key (double underscore = colon)
+# JWT Key - .NET espera Jwt__Key (doble underscore = colon en config)
 export Jwt__Key="${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_please_change_in_production}"
 echo "JWT Key configured: ${Jwt__Key:0:10}..."
 
-# Pass DATABASE_URL to all services via environment
+# Los servicios parsean DATABASE_URL directamente en sus Program.cs
+# No necesitamos hacer nada aquí - solo loguear
 if [ -n "$DATABASE_URL" ]; then
-    echo "DATABASE_URL detected: ${DATABASE_URL:0:30}..."
-    export ConnectionStrings__DefaultConnection="FROM_DATABASE_URL"
+    echo "DATABASE_URL detected - each service will parse it"
+else
+    echo "WARNING: No DATABASE_URL found - services will use default config"
 fi
-
-# Also ensure Neon URL format works - some services might need it parsed
-export NEON_DATABASE_URL="$DATABASE_URL"
 
 # Función para esperar a que un puerto esté libre
 wait_for_port() {
@@ -45,33 +49,7 @@ wait_for_port() {
     echo "Port $port is free"
 }
 
-# Iniciar servicios en background - capturar logs
-start_service() {
-    local name=$1
-    local path=$2
-    local port=$3
-    
-    echo "Starting $name on port $port..."
-    cd /app/services/$path
-    
-    # Esperar a que el puerto esté libre
-    wait_for_port $port
-    
-    # Iniciar en background con stdout/stderr capturado
-    dotnet ${name}Service.dll --urls "http://0.0.0.0:$port" 2>&1 | tee /tmp/$name.log &
-    echo "$name started with PID: $!"
-    
-    # Esperar a que initialize
-    sleep 5
-    
-    # Mostrar logs si hay errores
-    if grep -qi "error\|exception\|fail\|crit" /tmp/$name.log 2>/dev/null; then
-        echo "=== $name ERRORS ==="
-        grep -i "error\|exception\|fail\|crit" /tmp/$name.log | head -20
-    fi
-}
-
-# Iniciar servicios en background (excepto Gateway)
+# Iniciar servicios en background
 start_service() {
     local name=$1
     local path=$2
@@ -85,7 +63,8 @@ start_service() {
     
     # Iniciar en background
     nohup dotnet ${name}Service.dll --urls "http://0.0.0.0:$port" > /tmp/$name.log 2>&1 &
-    echo "$name started with PID: $!"
+    local pid=$!
+    echo "$name started with PID: $pid"
     
     # Mostrar logs iniciales
     sleep 3
@@ -96,7 +75,11 @@ start_service() {
 # Show environment variables for debugging
 echo "=========================================="
 echo "ENVIRONMENT VARIABLES:"
-echo "DATABASE_URL: ${DATABASE_URL:0:40}..."
+if [ -n "$DATABASE_URL" ]; then
+    echo "DATABASE_URL: ${DATABASE_URL:0:40}..."
+else
+    echo "DATABASE_URL: (not set)"
+fi
 echo "JWT_KEY: ${JWT_KEY:0:20}..."
 echo "Jwt__Key: ${Jwt__Key:0:20}..."
 echo "PORT: $PORT"
