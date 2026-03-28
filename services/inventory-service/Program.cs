@@ -5,13 +5,6 @@ using InventoryService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Railway: Accept PORT from environment variable
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(int.Parse(port));
-});
-
 // Convert DATABASE_URL to Npgsql format if present
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 if (!string.IsNullOrEmpty(databaseUrl))

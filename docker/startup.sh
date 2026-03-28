@@ -3,7 +3,7 @@ set -e
 
 echo "Starting E-Commerce Microservices..."
 
-# Puerto que Render asigna
+# Puerto que Render asigna (para el API Gateway)
 export PORT=${PORT:-10000}
 
 # Use direct connection string (sslmode only, no channel_binding)
@@ -42,12 +42,13 @@ echo "Starting Inventory Service on port 8007..."
 cd /app/services/inventory
 dotnet InventoryService.dll --urls "http://0.0.0.0:8007" &
 
-echo "Starting API Gateway on port 8000..."
+# API Gateway escucha en el puerto de Render (10000)
+echo "Starting API Gateway on port $PORT..."
 cd /app/services/gateway
-dotnet ApiGateway.dll --urls "http://0.0.0.0:8000" &
+dotnet ApiGateway.dll --urls "http://0.0.0.0:$PORT" &
 
 echo "Waiting for services to start..."
-sleep 20
+sleep 25
 
 echo "All services started. Starting nginx..."
 nginx -g 'daemon off;'
