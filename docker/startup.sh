@@ -50,19 +50,21 @@ wait_for_port() {
 }
 
 # Iniciar servicios en background
+# IMPORTANTE: Usar 127.0.0.1 en vez de 0.0.0.0 para que Render NO detecte estos puertos
+# Render detecta el primer puerto que ve y reinicia el deploy pensando que es el principal
 start_service() {
     local name=$1
     local path=$2
     local port=$3
     
-    echo "Starting $name on port $port..."
+    echo "Starting $name on port $port (localhost only)..."
     cd /app/services/$path
     
     # Esperar a que el puerto esté libre
     wait_for_port $port
     
-    # Iniciar en background
-    nohup dotnet ${name}Service.dll --urls "http://0.0.0.0:$port" > /tmp/$name.log 2>&1 &
+    # Iniciar en background - solo en localhost para que Render no lo detecte
+    nohup dotnet ${name}Service.dll --urls "http://127.0.0.1:$port" > /tmp/$name.log 2>&1 &
     local pid=$!
     echo "$name started with PID: $pid"
     
@@ -98,6 +100,11 @@ start_service "Inventory" "inventory" "8007"
 echo "=========================================="
 echo "All microservices started!"
 echo "=========================================="
+
+# Esperar a que todos los servicios estén completamente inicializados
+# Esto es crítico para evitar que el Gateway intente conectar a servicios que aún no están listos
+echo "Waiting for services to initialize..."
+sleep 15
 
 # Iniciar API Gateway en FOREGROUND (proceso principal en el puerto de Render)
 echo "Starting API Gateway on port $PORT..."
