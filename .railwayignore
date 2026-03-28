@@ -1,6 +1,0 @@
-tests/
-*.log
-*.md
-.git/
-obj/
-bin/Debug/

@@ -1,0 +1,75 @@
+# E-Commerce Microservices - All in One Container
+# For Fly.io / single container deployment
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+
+RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
+
+# Build all services
+WORKDIR /src
+
+# Copy and build each service
+COPY ["services/auth-service/AuthService.csproj", "services/auth-service/"]
+RUN dotnet restore services/auth-service/AuthService.csproj
+COPY services/auth-service/. services/auth-service/
+RUN dotnet publish services/auth-service/AuthService.csproj -c Release -o /app/publish/auth
+
+COPY ["services/product-service/ProductService.csproj", "services/product-service/"]
+RUN dotnet restore services/product-service/ProductService.csproj
+COPY services/product-service/. services/product-service/
+RUN dotnet publish services/product-service/ProductService.csproj -c Release -o /app/publish/product
+
+COPY ["services/order-service/OrderService.csproj", "services/order-service/"]
+RUN dotnet restore services/order-service/OrderService.csproj
+COPY services/order-service/. services/order-service/
+RUN dotnet publish services/order-service/OrderService.csproj -c Release -o /app/publish/order
+
+COPY ["services/cart-service/CartService.csproj", "services/cart-service/"]
+RUN dotnet restore services/cart-service/CartService.csproj
+COPY services/cart-service/. services/cart-service/
+RUN dotnet publish services/cart-service/CartService.csproj -c Release -o /app/publish/cart
+
+COPY ["services/payment-service/PaymentService.csproj", "services/payment-service/"]
+RUN dotnet restore services/payment-service/PaymentService.csproj
+COPY services/payment-service/. services/payment-service/
+RUN dotnet publish services/payment-service/PaymentService.csproj -c Release -o /app/publish/payment
+
+COPY ["services/notification-service/NotificationService.csproj", "services/notification-service/"]
+RUN dotnet restore services/notification-service/NotificationService.csproj
+COPY services/notification-service/. services/notification-service/
+RUN dotnet publish services/notification-service/NotificationService.csproj -c Release -o /app/publish/notification
+
+COPY ["services/inventory-service/InventoryService.csproj", "services/inventory-service/"]
+RUN dotnet restore services/inventory-service/InventoryService.csproj
+COPY services/inventory-service/. services/inventory-service/
+RUN dotnet publish services/inventory-service/InventoryService.csproj -c Release -o /app/publish/inventory
+
+COPY ["api-gateway/ApiGateway.csproj", "api-gateway/"]
+RUN dotnet restore api-gateway/ApiGateway.csproj
+COPY api-gateway/. api-gateway/
+RUN dotnet publish api-gateway/ApiGateway.csproj -c Release -o /app/publish/gateway
+
+# ==================== Runtime Stage ====================
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+
+RUN apt-get update && apt-get install -y nginx procps curl && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy all published services
+COPY --from=build /app/publish /app/services
+
+# Copy nginx config
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Copy client files
+COPY client /usr/share/nginx/html
+
+# Copy startup script
+COPY docker/startup.sh /app/startup.sh
+RUN chmod +x /app/startup.sh
+
+# Expose port
+EXPOSE 80
+
+ENTRYPOINT ["/app/startup.sh"]
