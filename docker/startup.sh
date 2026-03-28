@@ -3,48 +3,51 @@ set -e
 
 echo "Starting E-Commerce Microservices..."
 
+# Puerto que Render asigna
+export PORT=${PORT:-10000}
+
 # Use direct connection string (sslmode only, no channel_binding)
 export ConnectionStrings__DefaultConnection="Host=ep-falling-art-a8l470fw-pooler.eastus2.azure.neon.tech;Port=5432;Database=neondb;Username=neondb_owner;Password=npg_U3ToW0RsVOSc;sslmode=require"
 
 export JWT_KEY="${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_please_change_in_production}"
 
-echo "Using direct connection string"
+echo "Using PORT: $PORT"
 
-# Start all services
-echo "Starting Auth Service on port 5001..."
+# Start all services (usamos puertos internos 8001-8007)
+echo "Starting Auth Service on port 8001..."
 cd /app/services/auth
-dotnet AuthService.dll --urls "http://0.0.0.0:5001" &
+dotnet AuthService.dll --urls "http://0.0.0.0:8001" &
 
-echo "Starting Product Service on port 5002..."
+echo "Starting Product Service on port 8002..."
 cd /app/services/product
-dotnet ProductService.dll --urls "http://0.0.0.0:5002" &
+dotnet ProductService.dll --urls "http://0.0.0.0:8002" &
 
-echo "Starting Order Service on port 5003..."
+echo "Starting Order Service on port 8003..."
 cd /app/services/order
-dotnet OrderService.dll --urls "http://0.0.0.0:5003" &
+dotnet OrderService.dll --urls "http://0.0.0.0:8003" &
 
-echo "Starting Cart Service on port 5004..."
+echo "Starting Cart Service on port 8004..."
 cd /app/services/cart
-dotnet CartService.dll --urls "http://0.0.0.0:5004" &
+dotnet CartService.dll --urls "http://0.0.0.0:8004" &
 
-echo "Starting Payment Service on port 5005..."
+echo "Starting Payment Service on port 8005..."
 cd /app/services/payment
-dotnet PaymentService.dll --urls "http://0.0.0.0:5005" &
+dotnet PaymentService.dll --urls "http://0.0.0.0:8005" &
 
-echo "Starting Notification Service on port 5006..."
+echo "Starting Notification Service on port 8006..."
 cd /app/services/notification
-dotnet NotificationService.dll --urls "http://0.0.0.0:5006" &
+dotnet NotificationService.dll --urls "http://0.0.0.0:8006" &
 
-echo "Starting Inventory Service on port 5007..."
+echo "Starting Inventory Service on port 8007..."
 cd /app/services/inventory
-dotnet InventoryService.dll --urls "http://0.0.0.0:5007" &
+dotnet InventoryService.dll --urls "http://0.0.0.0:8007" &
 
-echo "Starting API Gateway on port 5000..."
+echo "Starting API Gateway on port 8000..."
 cd /app/services/gateway
-dotnet ApiGateway.dll --urls "http://0.0.0.0:5000" &
+dotnet ApiGateway.dll --urls "http://0.0.0.0:8000" &
 
 echo "Waiting for services to start..."
-sleep 15
+sleep 20
 
 echo "All services started. Starting nginx..."
 nginx -g 'daemon off;'
