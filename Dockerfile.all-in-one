@@ -50,18 +50,17 @@ RUN dotnet publish api-gateway/ApiGateway.csproj -c Release -o /app/publish/gate
 # ==================== Runtime Stage ====================
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 
-RUN apk add --no-cache nginx procps curl
+RUN apk add --no-cache procps curl
 
 WORKDIR /app
 
 # Copy all published services
 COPY --from=build /app/publish /app/services
 
-# Copy nginx config
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
+# No nginx needed - API Gateway serves static files
 
-# Copy client files
-COPY client /usr/share/nginx/html
+# Copy client files to API Gateway wwwroot for serving static files
+COPY client /app/services/gateway/wwwroot
 
 # Copy startup script
 COPY docker/startup.sh /app/startup.sh
