@@ -1,4 +1,4 @@
-const API_BASE = ''; // Empty for relative URLs (works with nginx) or use 'http://localhost:5000' for direct access
+const API_BASE = 'http://localhost:10000'; // API Gateway URL (without /api, calls already include /api)
 const tokenKey = 'ecommerce_jwt';
 
 // Health check timeout (ms)
@@ -6,14 +6,14 @@ const HEALTH_CHECK_TIMEOUT = 5000;
 const SERVICE_REFRESH_INTERVAL = 30000;
 const TOAST_AUTO_HIDE_DELAY = 5000;
 
-// Service endpoints for health checks
+// Service endpoints for health checks (via API Gateway)
 const SERVICES_CONFIG = [
-    { name: 'product-service', url: 'http://localhost:5002/products/health', icon: '📦' },
-    { name: 'order-service', url: 'http://localhost:5003/orders/health', icon: '📋' },
-    { name: 'cart-service', url: 'http://localhost:5004/carts/health', icon: '🛒' },
-    { name: 'payment-service', url: 'http://localhost:5005/payments/health', icon: '💳' },
-    { name: 'notification-service', url: 'http://localhost:5006/notifications/health', icon: '🔔' },
-    { name: 'inventory-service', url: 'http://localhost:5007/inventory/health', icon: '📊' }
+    { name: 'product-service', url: 'http://localhost:10000/api/products/health', icon: '📦' },
+    { name: 'order-service', url: 'http://localhost:10000/api/orders/health', icon: '📋' },
+    { name: 'cart-service', url: 'http://localhost:10000/api/carts/health', icon: '🛒' },
+    { name: 'payment-service', url: 'http://localhost:10000/api/payments/health', icon: '💳' },
+    { name: 'notification-service', url: 'http://localhost:10000/api/notifications/health', icon: '🔔' },
+    { name: 'inventory-service', url: 'http://localhost:10000/api/inventory/health', icon: '📊' }
 ];
 
 // Cart state
