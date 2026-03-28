@@ -68,10 +68,36 @@ try
     var db = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
     db.Database.EnsureCreated();
     Console.WriteLine("Order database initialized successfully.");
+    
+    // Verify tables exist
+    var count = db.Orders.Count();
+    Console.WriteLine($"Order table verified - {count} rows");
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Warning: Could not initialize database: {ex.Message}");
+    Console.WriteLine($"ERROR initializing Order database: {ex.Message}");
+    // Try to create tables manually
+    try
+    {
+        using var scope2 = app.Services.CreateScope();
+        var db2 = scope2.ServiceProvider.GetRequiredService<OrderDbContext>();
+        db2.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""Orders"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""UserId"" INTEGER NOT NULL,
+                ""ProductId"" INTEGER NOT NULL,
+                ""Quantity"" INTEGER NOT NULL,
+                ""TotalPrice"" DECIMAL(18,2) NOT NULL,
+                ""Status"" TEXT NOT NULL,
+                ""CreatedAt"" TIMESTAMP NOT NULL
+            );
+        ");
+        Console.WriteLine("Order tables created manually.");
+    }
+    catch (Exception ex2)
+    {
+        Console.WriteLine($"Could not create Order tables manually: {ex2.Message}");
+    }
 }
 
 app.Run();

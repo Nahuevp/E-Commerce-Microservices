@@ -68,10 +68,37 @@ try
     var db = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
     db.Database.EnsureCreated();
     Console.WriteLine("Payment database initialized successfully.");
+    
+    // Verify tables exist
+    var count = db.Payments.Count();
+    Console.WriteLine($"Payment table verified - {count} rows");
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Warning: Could not initialize database: {ex.Message}");
+    Console.WriteLine($"ERROR initializing Payment database: {ex.Message}");
+    // Try to create tables manually
+    try
+    {
+        using var scope2 = app.Services.CreateScope();
+        var db2 = scope2.ServiceProvider.GetRequiredService<PaymentDbContext>();
+        db2.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""Payments"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""OrderId"" INTEGER NOT NULL,
+                ""Amount"" DECIMAL(18,2) NOT NULL,
+                ""CardNumber"" TEXT,
+                ""Status"" TEXT NOT NULL,
+                ""TransactionId"" TEXT,
+                ""Reason"" TEXT,
+                ""CreatedAt"" TIMESTAMP NOT NULL
+            );
+        ");
+        Console.WriteLine("Payment tables created manually.");
+    }
+    catch (Exception ex2)
+    {
+        Console.WriteLine($"Could not create Payment tables manually: {ex2.Message}");
+    }
 }
 
 app.Run();

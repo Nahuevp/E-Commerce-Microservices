@@ -68,10 +68,35 @@ try
     var db = scope.ServiceProvider.GetRequiredService<NotificationDbContext>();
     db.Database.EnsureCreated();
     Console.WriteLine("Notification database initialized successfully.");
+    
+    // Verify tables exist
+    var count = db.Notifications.Count();
+    Console.WriteLine($"Notification table verified - {count} rows");
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Warning: Could not initialize database: {ex.Message}");
+    Console.WriteLine($"ERROR initializing Notification database: {ex.Message}");
+    // Try to create tables manually
+    try
+    {
+        using var scope2 = app.Services.CreateScope();
+        var db2 = scope2.ServiceProvider.GetRequiredService<NotificationDbContext>();
+        db2.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""Notifications"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""UserId"" INTEGER NOT NULL,
+                ""Type"" TEXT NOT NULL,
+                ""Message"" TEXT NOT NULL,
+                ""IsRead"" BOOLEAN NOT NULL DEFAULT FALSE,
+                ""CreatedAt"" TIMESTAMP NOT NULL
+            );
+        ");
+        Console.WriteLine("Notification tables created manually.");
+    }
+    catch (Exception ex2)
+    {
+        Console.WriteLine($"Could not create Notification tables manually: {ex2.Message}");
+    }
 }
 
 app.Run();

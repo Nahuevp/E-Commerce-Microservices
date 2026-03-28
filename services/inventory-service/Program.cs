@@ -72,10 +72,43 @@ try
     var db = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
     db.Database.EnsureCreated();
     Console.WriteLine("Inventory database initialized successfully.");
+    
+    // Verify tables exist
+    var count = db.Inventories.Count();
+    Console.WriteLine($"Inventory table verified - {count} rows");
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Warning: Could not initialize database: {ex.Message}");
+    Console.WriteLine($"ERROR initializing Inventory database: {ex.Message}");
+    // Try to create tables manually
+    try
+    {
+        using var scope2 = app.Services.CreateScope();
+        var db2 = scope2.ServiceProvider.GetRequiredService<InventoryDbContext>();
+        db2.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""Inventories"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""ProductId"" INTEGER NOT NULL UNIQUE,
+                ""TotalStock"" INTEGER NOT NULL DEFAULT 0,
+                ""AvailableStock"" INTEGER NOT NULL DEFAULT 0,
+                ""ReservedStock"" INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS ""InventoryReservations"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""ProductId"" INTEGER NOT NULL,
+                ""Quantity"" INTEGER NOT NULL,
+                ""ReservationCode"" TEXT,
+                ""Status"" TEXT NOT NULL,
+                ""CreatedAt"" TIMESTAMP NOT NULL,
+                ""ExpiresAt"" TIMESTAMP NOT NULL
+            );
+        ");
+        Console.WriteLine("Inventory tables created manually.");
+    }
+    catch (Exception ex2)
+    {
+        Console.WriteLine($"Could not create Inventory tables manually: {ex2.Message}");
+    }
 }
 
 app.Run();
