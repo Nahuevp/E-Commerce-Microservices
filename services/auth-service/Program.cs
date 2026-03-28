@@ -74,10 +74,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-    context.Database.EnsureCreated();
-}
+// Don't block startup if database is not ready
+// Services will connect when needed
 
 app.Run();
