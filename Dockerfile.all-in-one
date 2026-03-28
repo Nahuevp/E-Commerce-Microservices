@@ -1,58 +1,47 @@
 # E-Commerce Microservices - All in One Container
-# For Fly.io / single container deployment
+# Optimizado para build cache
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
+RUN apk add --no-cache git
 
-RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
-
-# Build all services
 WORKDIR /src
 
-# Copy and build each service
-COPY ["services/auth-service/AuthService.csproj", "services/auth-service/"]
-RUN dotnet restore services/auth-service/AuthService.csproj
-COPY services/auth-service/. services/auth-service/
-RUN dotnet publish services/auth-service/AuthService.csproj -c Release -o /app/publish/auth
-
-COPY ["services/product-service/ProductService.csproj", "services/product-service/"]
-RUN dotnet restore services/product-service/ProductService.csproj
-COPY services/product-service/. services/product-service/
-RUN dotnet publish services/product-service/ProductService.csproj -c Release -o /app/publish/product
-
-COPY ["services/order-service/OrderService.csproj", "services/order-service/"]
-RUN dotnet restore services/order-service/OrderService.csproj
-COPY services/order-service/. services/order-service/
-RUN dotnet publish services/order-service/OrderService.csproj -c Release -o /app/publish/order
-
-COPY ["services/cart-service/CartService.csproj", "services/cart-service/"]
-RUN dotnet restore services/cart-service/CartService.csproj
-COPY services/cart-service/. services/cart-service/
-RUN dotnet publish services/cart-service/CartService.csproj -c Release -o /app/publish/cart
-
-COPY ["services/payment-service/PaymentService.csproj", "services/payment-service/"]
-RUN dotnet restore services/payment-service/PaymentService.csproj
-COPY services/payment-service/. services/payment-service/
-RUN dotnet publish services/payment-service/PaymentService.csproj -c Release -o /app/publish/payment
-
-COPY ["services/notification-service/NotificationService.csproj", "services/notification-service/"]
-RUN dotnet restore services/notification-service/NotificationService.csproj
-COPY services/notification-service/. services/notification-service/
-RUN dotnet publish services/notification-service/NotificationService.csproj -c Release -o /app/publish/notification
-
-COPY ["services/inventory-service/InventoryService.csproj", "services/inventory-service/"]
-RUN dotnet restore services/inventory-service/InventoryService.csproj
-COPY services/inventory-service/. services/inventory-service/
-RUN dotnet publish services/inventory-service/InventoryService.csproj -c Release -o /app/publish/inventory
-
+# Restaurar todos los proyectos en paralelo primero (mejor cache)
+COPY ["services/auth-service/AuthService.csproj", "services/"]
+COPY ["services/product-service/ProductService.csproj", "services/"]
+COPY ["services/order-service/OrderService.csproj", "services/"]
+COPY ["services/cart-service/CartService.csproj", "services/"]
+COPY ["services/payment-service/PaymentService.csproj", "services/"]
+COPY ["services/notification-service/NotificationService.csproj", "services/"]
+COPY ["services/inventory-service/InventoryService.csproj", "services/"]
 COPY ["api-gateway/ApiGateway.csproj", "api-gateway/"]
-RUN dotnet restore api-gateway/ApiGateway.csproj
+
+RUN dotnet restore services/auth-service/AuthService.csproj && \
+    dotnet restore services/product-service/ProductService.csproj && \
+    dotnet restore services/order-service/OrderService.csproj && \
+    dotnet restore services/cart-service/CartService.csproj && \
+    dotnet restore services/payment-service/PaymentService.csproj && \
+    dotnet restore services/notification-service/NotificationService.csproj && \
+    dotnet restore services/inventory-service/InventoryService.csproj && \
+    dotnet restore api-gateway/ApiGateway.csproj
+
+# Copy all source and build
+COPY services/. services/
 COPY api-gateway/. api-gateway/
-RUN dotnet publish api-gateway/ApiGateway.csproj -c Release -o /app/publish/gateway
+
+RUN dotnet publish services/auth-service/AuthService.csproj -c Release -o /app/publish/auth --no-restore && \
+    dotnet publish services/product-service/ProductService.csproj -c Release -o /app/publish/product --no-restore && \
+    dotnet publish services/order-service/OrderService.csproj -c Release -o /app/publish/order --no-restore && \
+    dotnet publish services/cart-service/CartService.csproj -c Release -o /app/publish/cart --no-restore && \
+    dotnet publish services/payment-service/PaymentService.csproj -c Release -o /app/publish/payment --no-restore && \
+    dotnet publish services/notification-service/NotificationService.csproj -c Release -o /app/publish/notification --no-restore && \
+    dotnet publish services/inventory-service/InventoryService.csproj -c Release -o /app/publish/inventory --no-restore && \
+    dotnet publish api-gateway/ApiGateway.csproj -c Release -o /app/publish/gateway --no-restore
 
 # ==================== Runtime Stage ====================
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 
-RUN apt-get update && apt-get install -y nginx procps curl && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache nginx procps curl
 
 WORKDIR /app
 
