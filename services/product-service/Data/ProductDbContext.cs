@@ -8,5 +8,10 @@ namespace ProductService.Data
         public ProductDbContext(DbContextOptions<ProductDbContext> options) : base(options) { }
 
         public DbSet<Product> Products { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Product>().ToTable("Products");
+        }
     }
 }

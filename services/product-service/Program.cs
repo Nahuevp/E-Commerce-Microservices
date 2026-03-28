@@ -62,6 +62,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Create database and tables if they don't exist
+// Note: Using EnsureCreated works if tables don't exist yet
 try
 {
     using var scope = app.Services.CreateScope();
@@ -72,6 +73,26 @@ try
 catch (Exception ex)
 {
     Console.WriteLine($"Warning: Could not initialize database: {ex.Message}");
+    // Try to create tables manually if EnsureCreated fails
+    try
+    {
+        using var scope2 = app.Services.CreateScope();
+        var db2 = scope2.ServiceProvider.GetRequiredService<ProductDbContext>();
+        db2.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""Products"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""Name"" TEXT NOT NULL,
+                ""Price"" DECIMAL(18,2) NOT NULL,
+                ""Stock"" INTEGER NOT NULL,
+                ""Description"" TEXT
+            );
+        ");
+        Console.WriteLine("Products table created manually.");
+    }
+    catch (Exception ex2)
+    {
+        Console.WriteLine($"Could not create table manually: {ex2.Message}");
+    }
 }
 
 app.Run();
