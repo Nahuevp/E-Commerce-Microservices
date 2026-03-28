@@ -129,15 +129,15 @@ start_service() {
     tail -20 /tmp/$name.log 2>/dev/null || true
 }
 
-# Iniciar servicios uno por uno - todos usan puerto 8080 internamente
-# El Gateway los alcanza via localhost:8080
-start_service "Auth" "auth" "8080"
-start_service "Product" "product" "8080"
-start_service "Order" "order" "8080"
-start_service "Cart" "cart" "8080"
-start_service "Payment" "payment" "8080"
-start_service "Notification" "notification" "8080"
-start_service "Inventory" "inventory" "8080"
+# Iniciar servicios uno por uno - cada uno en su propio puerto interno
+# IMPORTANTE: No esperar a que el puerto esté libre ya que cada servicio tiene su propio puerto
+start_service "Auth" "auth" "8001"
+start_service "Product" "product" "8002"
+start_service "Order" "order" "8003"
+start_service "Cart" "cart" "8004"
+start_service "Payment" "payment" "8005"
+start_service "Notification" "notification" "8006"
+start_service "Inventory" "inventory" "8007"
 
 echo "=========================================="
 echo "All services started!"
