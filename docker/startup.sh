@@ -67,8 +67,16 @@ start_service() {
     tail -10 /tmp/$name.log 2>/dev/null || true
 }
 
-# Iniciar servicios en background
+# Show environment variables for debugging
 echo "=========================================="
+echo "ENVIRONMENT VARIABLES:"
+echo "DATABASE_URL: ${DATABASE_URL:0:40}..."
+echo "JWT_KEY: ${JWT_KEY:0:20}..."
+echo "Jwt__Key: ${Jwt__Key:0:20}..."
+echo "PORT: $PORT"
+echo "=========================================="
+
+# Iniciar servicios en background
 echo "Starting microservices..."
 start_service "Auth" "auth" "8001"
 start_service "Product" "product" "8002"
