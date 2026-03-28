@@ -25,6 +25,9 @@ var app = builder.Build();
 
 app.UseCors("AllowAll");
 
+// Health check endpoint for Render
+app.MapGet("/health", () => Results.Ok("OK"));
+
 app.MapReverseProxy();
 
 app.Run();

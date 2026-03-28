@@ -39,31 +39,6 @@ http {
     proxy_buffering off;
     proxy_http_version 1.1;
     
-    # Server para health check de Render (puerto 10000)
-    server {
-        listen ${GATEWAY_PORT_PLACEHOLDER};
-        server_name _;
-        
-        # Health check - responde OK
-        location /health {
-            return 200 'OK';
-            add_header Content-Type text/plain;
-        }
-        
-        # Proxy API al Gateway
-        location ^~ /api {
-            proxy_pass http://127.0.0.1:${GATEWAY_PORT_PLACEHOLDER};
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
-            proxy_connect_timeout 120s;
-            proxy_send_timeout 120s;
-            proxy_read_timeout 120s;
-        }
-    }
-    
-    # Server para el frontend (puerto 80)
     server {
         listen 80;
         server_name _;
