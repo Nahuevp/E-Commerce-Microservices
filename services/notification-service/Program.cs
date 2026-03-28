@@ -61,7 +61,17 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Don't block startup if database is not ready
-// Services will connect when needed
+// Create database and tables if they don't exist
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<NotificationDbContext>();
+    db.Database.EnsureCreated();
+    Console.WriteLine("Notification database initialized successfully.");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Warning: Could not initialize database: {ex.Message}");
+}
 
 app.Run();

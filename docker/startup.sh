@@ -12,8 +12,9 @@ echo "Render assigned PORT: $PORT"
 unset HTTP_PORTS
 unset HTTPS_PORTS
 
-# JWT Key
-export JWT_KEY="${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_please_change_in_production}"
+# JWT Key - .NET expects Jwt__Key (double underscore = colon)
+export Jwt__Key="${JWT_KEY:-super_secret_key_that_is_long_enough_for_hmac_sha256_please_change_in_production}"
+echo "JWT Key configured: ${Jwt__Key:0:10}..."
 
 # Si DATABASE_URL está presente, los servicios ya lo manejan
 if [ -n "$DATABASE_URL" ]; then
