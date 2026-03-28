@@ -69,10 +69,15 @@ try
     var db = scope.ServiceProvider.GetRequiredService<ProductDbContext>();
     db.Database.EnsureCreated();
     Console.WriteLine("Product database initialized successfully.");
+    
+    // Verify table exists by querying it
+    var count = db.Products.Count();
+    Console.WriteLine($"Products table verified - {count} rows");
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Warning: Could not initialize database: {ex.Message}");
+    Console.WriteLine($"ERROR initializing database: {ex.Message}");
+    Console.WriteLine($"Stack trace: {ex.StackTrace}");
     // Try to create tables manually if EnsureCreated fails
     try
     {

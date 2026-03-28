@@ -73,10 +73,41 @@ try
     var db = scope.ServiceProvider.GetRequiredService<CartDbContext>();
     db.Database.EnsureCreated();
     Console.WriteLine("Cart database initialized successfully.");
+    
+    // Verify tables exist
+    var cartCount = db.Carts.Count();
+    var itemCount = db.CartItems.Count();
+    Console.WriteLine($"Cart tables verified - Carts: {cartCount}, CartItems: {itemCount}");
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Warning: Could not initialize database: {ex.Message}");
+    Console.WriteLine($"ERROR initializing Cart database: {ex.Message}");
+    // Try to create tables manually
+    try
+    {
+        using var scope2 = app.Services.CreateScope();
+        var db2 = scope2.ServiceProvider.GetRequiredService<CartDbContext>();
+        db2.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""Carts"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""UserId"" INTEGER NOT NULL,
+                ""CreatedAt"" TIMESTAMP NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS ""CartItems"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""CartId"" INTEGER NOT NULL,
+                ""ProductId"" INTEGER NOT NULL,
+                ""Quantity"" INTEGER NOT NULL,
+                ""Price"" DECIMAL(18,2) NOT NULL,
+                FOREIGN KEY (""CartId"") REFERENCES ""Carts""(""Id"")
+            );
+        ");
+        Console.WriteLine("Cart tables created manually.");
+    }
+    catch (Exception ex2)
+    {
+        Console.WriteLine($"Could not create Cart tables manually: {ex2.Message}");
+    }
 }
 
 app.Run();

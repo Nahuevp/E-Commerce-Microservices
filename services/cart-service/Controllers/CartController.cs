@@ -12,11 +12,12 @@ namespace CartService.Controllers
     [Route("carts")]
     public class CartController : ControllerBase
     {
-        // Service URLs (docker-compose service names)
-        private const string InventoryServiceUrl = "http://inventory-service:8080";
-        private const string PaymentServiceUrl = "http://payment-service:8080";
-        private const string OrderServiceUrl = "http://order-service:8080";
-        private const string NotificationServiceUrl = "http://notification-service:8080";
+        // Service URLs - use localhost for single-container deployment
+        // Ports: Inventory=8007, Payment=8005, Order=8003, Notification=8006
+        private const string InventoryServiceUrl = "http://127.0.0.1:8007";
+        private const string PaymentServiceUrl = "http://127.0.0.1:8005";
+        private const string OrderServiceUrl = "http://127.0.0.1:8003";
+        private const string NotificationServiceUrl = "http://127.0.0.1:8006";
         
         // Request timeout
         private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(3);
