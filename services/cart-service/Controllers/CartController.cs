@@ -95,6 +95,32 @@ namespace CartService.Controllers
             // Check if item already exists in cart
             var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == request.ProductId);
             
+            // Validation step: Check available inventory from Inventory Service
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(3); // Fast timeout for responsiveness
+                var availabilityResponse = await httpClient.GetAsync($"{InventoryServiceUrl}/api/inventory/{request.ProductId}/availability");
+                
+                if (availabilityResponse.IsSuccessStatusCode)
+                {
+                    var inventory = await availabilityResponse.Content.ReadFromJsonAsync<AvailabilityResponse>();
+                    if (inventory != null)
+                    {
+                        int currentQty = existingItem?.Quantity ?? 0;
+                        if (currentQty + request.Quantity > inventory.AvailableStock)
+                        {
+                            return BadRequest(new { error = $"Cannot add item. Only {inventory.AvailableStock} items available in stock." });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Could not verify inventory: {ex.Message}");
+                // If inventory is down, we proceed for resilience, though it might fail at checkout.
+            }
+
             if (existingItem != null)
             {
                 // Update quantity
@@ -139,6 +165,30 @@ namespace CartService.Controllers
 
             if (request.Quantity > 0)
             {
+                // Validation step: Check available inventory before updating to a higher quantity
+                if (request.Quantity > cartItem.Quantity)
+                {
+                    try
+                    {
+                        var httpClient = _httpClientFactory.CreateClient();
+                        httpClient.Timeout = TimeSpan.FromSeconds(3);
+                        var availabilityResponse = await httpClient.GetAsync($"{InventoryServiceUrl}/api/inventory/{cartItem.ProductId}/availability");
+                        
+                        if (availabilityResponse.IsSuccessStatusCode)
+                        {
+                            var inventory = await availabilityResponse.Content.ReadFromJsonAsync<AvailabilityResponse>();
+                            if (inventory != null && request.Quantity > inventory.AvailableStock)
+                            {
+                                return BadRequest(new { error = $"Cannot increase quantity. Only {inventory.AvailableStock} items available in stock." });
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"Could not verify inventory: {ex.Message}");
+                    }
+                }
+
                 cartItem.Quantity = request.Quantity;
             }
             else
@@ -599,5 +649,13 @@ namespace CartService.Controllers
     public class OrderResult
     {
         public int OrderId { get; set; }
+    }
+
+    public class AvailabilityResponse
+    {
+        public int ProductId { get; set; }
+        public int AvailableStock { get; set; }
+        public int ReservedStock { get; set; }
+        public int TotalStock { get; set; }
     }
 }
