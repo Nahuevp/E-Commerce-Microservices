@@ -76,12 +76,14 @@ try
         db.Database.ExecuteSqlRaw(@"
             ALTER TABLE ""Orders"" ALTER COLUMN ""Status"" SET DEFAULT 'Pending';
             ALTER TABLE ""Orders"" ALTER COLUMN ""CreatedAt"" SET DEFAULT NOW();
+            ALTER TABLE ""Orders"" ALTER COLUMN ""Status"" DROP NOT NULL;
+            ALTER TABLE ""Orders"" ALTER COLUMN ""CreatedAt"" DROP NOT NULL;
         ");
         Console.WriteLine("Order table columns fixed with defaults.");
     }
-    catch
+    catch (Exception ex)
     {
-        // Columns might already have defaults or don't exist - ignore
+        Console.WriteLine($"Order table fix warning (can be ignored): {ex.Message}");
     }
     
     // Verify tables exist

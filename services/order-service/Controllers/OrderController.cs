@@ -43,19 +43,27 @@ namespace OrderService.Controllers
         [Authorize]
         public async Task<IActionResult> CreateOrder([FromBody] Order order)
         {
-            /* In a real scenario, this service would validate stock by communicating synchronously
-               with the Product Service or asynchronously via an event bus (e.g. RabbitMQ).
-               For this basic architecture demo, we'll just save the order assuming product exists. */
+            try
+            {
+                Console.WriteLine($"Creating order: UserId={order.UserId}, ProductId={order.ProductId}, Quantity={order.Quantity}, TotalPrice={order.TotalPrice}");
+                
+                // Ensure required fields have values (in case they weren't sent in request)
+                if (string.IsNullOrEmpty(order.Status))
+                    order.Status = "Pending";
+                if (order.CreatedAt == default)
+                    order.CreatedAt = DateTime.UtcNow;
 
-            // Ensure required fields have values (in case they weren't sent in request)
-            if (string.IsNullOrEmpty(order.Status))
-                order.Status = "Pending";
-            if (order.CreatedAt == default)
-                order.CreatedAt = DateTime.UtcNow;
-
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
+                _context.Orders.Add(order);
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"Order created successfully: Id={order.Id}");
+                return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR creating order: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
 
         [HttpDelete("{id}")]
