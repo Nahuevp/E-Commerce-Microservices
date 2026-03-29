@@ -120,10 +120,26 @@ namespace OrderService.Controllers
                 Console.WriteLine($"Warning: Could not return stock: {ex.Message}");
             }
 
-            // Update status instead of hard deleting
+            // Update status instead of hard deleting.
+            // DO NOT call _context.Orders.Update(order) to avoid Npgsql DateTime tracking exceptions.
+            // EF Core will automatically detect only the change to the Status field.
             order.Status = "Cancelled";
-            _context.Orders.Update(order);
-            await _context.SaveChangesAsync();
+            
+            try
+            {
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"Order {order.Id} successfully marked as cancelled in DB.");
+            }
+            catch (Exception dbEx)
+            {
+                Console.WriteLine($"DB Error updating order {order.Id}: {dbEx.Message}");
+                if (dbEx.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {dbEx.InnerException.Message}");
+                }
+                return StatusCode(500, new { error = "Database error", message = dbEx.Message });
+            }
+
             return NoContent();
         }
     }
