@@ -341,31 +341,8 @@ namespace CartService.Controllers
                             $"{InventoryServiceUrl}/api/inventory/decrement",
                             inventoryRequest);
                         
-                        // Also update Product service stock (for UI display)
-                        try
-                        {
-                            var productUpdateRequest = new
-                            {
-                                delta = -item.Quantity // Negative to decrement
-                            };
-                            
-                            var productResponse = await httpClient.PutAsJsonAsync(
-                                $"{ProductServiceUrl}/api/products/{item.ProductId}/stock",
-                                productUpdateRequest);
-                            
-                            if (productResponse.IsSuccessStatusCode)
-                            {
-                                _logger.LogInformation("Updated Product stock for {ProductId}", item.ProductId);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("Failed to update Product stock: {Status}", productResponse.StatusCode);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(ex, "Error updating Product stock");
-                        }
+                        // Note: Product service stock update removed to prevent crashes
+                        // Stock is tracked in Inventory service, Product service is for display only
                         
                         if (inventoryResponse.IsSuccessStatusCode)
                         {
