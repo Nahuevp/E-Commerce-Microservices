@@ -453,3 +453,4 @@ C:\Proyectos Visual\E-Commerce Microservices\tests\EcommerceMicroservices.Tests\
 C:\Proyectos Visual\E-Commerce Microservices\tests\EcommerceMicroservices.Tests\obj\Debug\net10.0\EcommerceMicroservices.Tests.pdb
 C:\Proyectos Visual\E-Commerce Microservices\tests\EcommerceMicroservices.Tests\obj\Debug\net10.0\EcommerceMicroservices.Tests.genruntimeconfig.cache
 C:\Proyectos Visual\E-Commerce Microservices\tests\EcommerceMicroservices.Tests\obj\Debug\net10.0\ref\EcommerceMicroservices.Tests.dll
+C:\Proyectos Visual\E-Commerce Microservices\tests\EcommerceMicroservices.Tests\obj\Debug\net10.0\EcommerceMicroservices.Tests.sourcelink.json

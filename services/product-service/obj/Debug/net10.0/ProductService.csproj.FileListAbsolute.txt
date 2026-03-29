@@ -131,3 +131,4 @@ C:\Proyectos Visual\E-Commerce Microservices\services\product-service\bin\Debug\
 C:\Proyectos Visual\E-Commerce Microservices\services\product-service\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 C:\Proyectos Visual\E-Commerce Microservices\services\product-service\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
 C:\Proyectos Visual\E-Commerce Microservices\services\product-service\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Proyectos Visual\E-Commerce Microservices\services\product-service\obj\Debug\net10.0\ProductService.sourcelink.json

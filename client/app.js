@@ -240,9 +240,9 @@ function getUserId() {
     if (!token) return null;
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.id || payload.userId || 1;
+        return payload.id || payload.userId || null;
     } catch (e) {
-        return 1; // fallback
+        return null; // Don't fallback to 1 - require login
     }
 }
 
@@ -254,6 +254,7 @@ function showAuth() {
     mainNav?.classList.add('hidden');
     userInfo?.classList.add('hidden');
     btnLogout?.classList.add('hidden');
+    btnOpenCart?.classList.add('hidden');
     serviceStatusPanel.classList.add('hidden');
 }
 
@@ -266,6 +267,7 @@ function showDashboard(email) {
     mainNav?.classList.remove('hidden');
     btnLogout?.classList.remove('hidden');
     userInfo?.classList.remove('hidden');
+    btnOpenCart?.classList.remove('hidden');
     
     // Set user name from email (or from token)
     if (userName && email) {
@@ -618,7 +620,13 @@ async function deleteOrder(id) {
 
 async function loadCart() {
     const userId = getUserId();
-    if (!userId) return;
+    if (!userId) {
+        // Not logged in - hide cart
+        currentCart = null;
+        currentCartId = null;
+        updateCartBadge();
+        return;
+    }
 
     try {
         const response = await fetchWithAuth(`${API_BASE}/api/carts/${userId}`);

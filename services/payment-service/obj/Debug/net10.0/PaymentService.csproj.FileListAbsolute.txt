@@ -130,3 +130,4 @@ C:\Proyectos Visual\E-Commerce Microservices\services\payment-service\obj\Debug\
 C:\Proyectos Visual\E-Commerce Microservices\services\payment-service\obj\Debug\net10.0\PaymentService.pdb
 C:\Proyectos Visual\E-Commerce Microservices\services\payment-service\obj\Debug\net10.0\PaymentService.genruntimeconfig.cache
 C:\Proyectos Visual\E-Commerce Microservices\services\payment-service\obj\Debug\net10.0\ref\PaymentService.dll
+C:\Proyectos Visual\E-Commerce Microservices\services\payment-service\obj\Debug\net10.0\PaymentService.sourcelink.json

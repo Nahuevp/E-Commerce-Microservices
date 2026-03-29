@@ -132,3 +132,4 @@ C:\Proyectos Visual\E-Commerce Microservices\services\auth-service\obj\Debug\net
 C:\Proyectos Visual\E-Commerce Microservices\services\auth-service\obj\Debug\net10.0\AuthService.pdb
 C:\Proyectos Visual\E-Commerce Microservices\services\auth-service\obj\Debug\net10.0\AuthService.genruntimeconfig.cache
 C:\Proyectos Visual\E-Commerce Microservices\services\auth-service\obj\Debug\net10.0\ref\AuthService.dll
+C:\Proyectos Visual\E-Commerce Microservices\services\auth-service\obj\Debug\net10.0\AuthService.sourcelink.json

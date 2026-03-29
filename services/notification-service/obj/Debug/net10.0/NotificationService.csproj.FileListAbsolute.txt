@@ -130,3 +130,4 @@ C:\Proyectos Visual\E-Commerce Microservices\services\notification-service\obj\D
 C:\Proyectos Visual\E-Commerce Microservices\services\notification-service\obj\Debug\net10.0\NotificationService.genruntimeconfig.cache
 C:\Proyectos Visual\E-Commerce Microservices\services\notification-service\obj\Debug\net10.0\ref\NotificationService.dll
 C:\Proyectos Visual\E-Commerce Microservices\services\notification-service\bin\Debug\net10.0\appsettings.json
+C:\Proyectos Visual\E-Commerce Microservices\services\notification-service\obj\Debug\net10.0\NotificationService.sourcelink.json

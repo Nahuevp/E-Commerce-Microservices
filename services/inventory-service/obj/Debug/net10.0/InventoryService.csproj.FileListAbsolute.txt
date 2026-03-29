@@ -130,3 +130,4 @@ C:\Proyectos Visual\E-Commerce Microservices\services\inventory-service\obj\Debu
 C:\Proyectos Visual\E-Commerce Microservices\services\inventory-service\obj\Debug\net10.0\InventoryService.pdb
 C:\Proyectos Visual\E-Commerce Microservices\services\inventory-service\obj\Debug\net10.0\InventoryService.genruntimeconfig.cache
 C:\Proyectos Visual\E-Commerce Microservices\services\inventory-service\obj\Debug\net10.0\ref\InventoryService.dll
+C:\Proyectos Visual\E-Commerce Microservices\services\inventory-service\obj\Debug\net10.0\InventoryService.sourcelink.json

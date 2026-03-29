@@ -30,3 +30,4 @@ C:\Proyectos Visual\E-Commerce Microservices\api-gateway\obj\Debug\net10.0\refin
 C:\Proyectos Visual\E-Commerce Microservices\api-gateway\obj\Debug\net10.0\ApiGateway.pdb
 C:\Proyectos Visual\E-Commerce Microservices\api-gateway\obj\Debug\net10.0\ApiGateway.genruntimeconfig.cache
 C:\Proyectos Visual\E-Commerce Microservices\api-gateway\obj\Debug\net10.0\ref\ApiGateway.dll
+C:\Proyectos Visual\E-Commerce Microservices\api-gateway\obj\Debug\net10.0\ApiGateway.sourcelink.json

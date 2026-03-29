@@ -131,3 +131,4 @@ C:\Proyectos Visual\E-Commerce Microservices\services\order-service\bin\Debug\ne
 C:\Proyectos Visual\E-Commerce Microservices\services\order-service\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 C:\Proyectos Visual\E-Commerce Microservices\services\order-service\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
 C:\Proyectos Visual\E-Commerce Microservices\services\order-service\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Proyectos Visual\E-Commerce Microservices\services\order-service\obj\Debug\net10.0\OrderService.sourcelink.json
