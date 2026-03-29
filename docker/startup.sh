@@ -33,9 +33,13 @@ fi
 # Render detecta puertos internos y reinicia. Vamos a hacer que solo el puerto 10000 sea visible
 # Esto bloquea que Render escanee los puertos 8001-8007
 echo "Configuring port visibility..."
-# No podemos usar iptables en containers de Render (no tenemos permisos)
-# En su lugar, vamos a usar una estrategia diferente: no iniciar los servicios hasta que el Gateway esté listo
-# y configurar el health check para que responda inmediatamente
+
+# Memory optimization: Use Workstation GC (less memory per process)
+# Server GC assumes it owns the full machine and allocates huge heaps — with 8 .NET
+# processes in a 512MB container this causes OOM kills and container restarts.
+export DOTNET_GCServer=0
+export DOTNET_GCHeapHardLimit=0x4000000
+echo "GC configured: Workstation mode, 64MB heap limit per process"
 
 # Función para esperar a que un puerto esté libre
 wait_for_port() {

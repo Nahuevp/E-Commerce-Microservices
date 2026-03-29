@@ -11,7 +11,7 @@ namespace InventoryService.Services
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<ReservationCleanupService> _logger;
-        private readonly TimeSpan _cleanupInterval = TimeSpan.FromMinutes(1);
+        private readonly TimeSpan _cleanupInterval = TimeSpan.FromMinutes(5);
         
         public ReservationCleanupService(
             IServiceScopeFactory scopeFactory,

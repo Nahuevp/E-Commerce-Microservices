@@ -66,13 +66,13 @@ app.MapGet("/health/all", async (HttpContext context) =>
     return Results.Ok(results);
 });
 
+app.MapReverseProxy();
+
 // SPA fallback - serve index.html for non-API routes
 app.MapFallback(async context =>
 {
     context.Response.ContentType = "text/html";
     await context.Response.SendFileAsync("wwwroot/index.html");
 });
-
-app.MapReverseProxy();
 
 app.Run();

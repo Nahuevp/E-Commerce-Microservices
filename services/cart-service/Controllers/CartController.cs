@@ -68,6 +68,14 @@ namespace CartService.Controllers
         [Authorize]
         public async Task<IActionResult> AddToCart([FromBody] AddToCartRequest request)
         {
+            // Validate input
+            if (request.ProductId <= 0)
+                return BadRequest(new { error = "ProductId must be greater than 0" });
+            if (request.Quantity <= 0)
+                return BadRequest(new { error = "Quantity must be greater than 0" });
+            if (request.Price <= 0)
+                return BadRequest(new { error = "Price must be greater than 0" });
+
             // Find or create cart for user
             var cart = await _context.Carts
                 .Include(c => c.Items)
@@ -341,17 +349,32 @@ namespace CartService.Controllers
                             $"{InventoryServiceUrl}/api/inventory/decrement",
                             inventoryRequest);
                         
-                        // Note: Product service stock update removed to prevent crashes
-                        // Stock is tracked in Inventory service, Product service is for display only
-                        
                         if (inventoryResponse.IsSuccessStatusCode)
                         {
                             _logger.LogInformation("Decremented inventory for product {ProductId}", item.ProductId);
                         }
                         else
                         {
-                            _logger.LogWarning("Failed to decrement stock for product {ProductId}: {Status}", 
+                            _logger.LogWarning("Failed to decrement inventory for product {ProductId}: {Status}", 
                                 item.ProductId, inventoryResponse.StatusCode);
+                        }
+                        
+                        // Sync stock to Product service (display only — non-blocking)
+                        try
+                        {
+                            var stockUpdateResponse = await httpClient.PutAsJsonAsync(
+                                $"{ProductServiceUrl}/products/{item.ProductId}/stock",
+                                new { delta = -item.Quantity });
+                            
+                            if (stockUpdateResponse.IsSuccessStatusCode)
+                                _logger.LogInformation("Synced product stock for {ProductId}", item.ProductId);
+                            else
+                                _logger.LogWarning("Failed to sync product stock for {ProductId}: {Status}", 
+                                    item.ProductId, stockUpdateResponse.StatusCode);
+                        }
+                        catch (Exception stockEx)
+                        {
+                            _logger.LogWarning(stockEx, "Non-critical: Could not sync product stock for {ProductId}", item.ProductId);
                         }
                     }
                     catch (Exception ex)
