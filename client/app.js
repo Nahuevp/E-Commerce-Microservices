@@ -290,6 +290,7 @@ function showView(view) {
         ordersSection.classList.add('hidden');
         navProducts?.classList.add('active');
         navOrders?.classList.remove('active');
+        loadProducts();
     } else if (view === 'orders') {
         dashboardSection.classList.add('hidden');
         ordersSection.classList.remove('hidden');

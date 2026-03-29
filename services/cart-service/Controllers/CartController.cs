@@ -284,6 +284,32 @@ namespace CartService.Controllers
 
             try
             {
+                // ========== STEP 0: Validate Stock BEFORE payment ==========
+                _logger.LogInformation("Step 0: Validating stock before checkout");
+                foreach (var item in cart.Items)
+                {
+                    try
+                    {
+                        var availabilityResponse = await httpClient.GetAsync($"{InventoryServiceUrl}/api/inventory/{item.ProductId}/availability");
+                        if (availabilityResponse.IsSuccessStatusCode)
+                        {
+                            var inventory = await availabilityResponse.Content.ReadFromJsonAsync<AvailabilityResponse>();
+                            if (inventory != null && item.Quantity > inventory.AvailableStock)
+                            {
+                                return BadRequest(new CheckoutFailureResponse
+                                {
+                                    Error = "Insufficient stock",
+                                    Reason = $"Cannot checkout. Only {inventory.AvailableStock} items available for Product {item.ProductId}."
+                                });
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"Could not verify inventory for ProductId={item.ProductId}: {ex.Message}");
+                    }
+                }
+
                 // ========== STEP 1: Process payment first ==========
                 _logger.LogInformation("Step 1: Processing payment for amount {Amount}", totalAmount);
                 

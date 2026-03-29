@@ -91,16 +91,14 @@ namespace InventoryService.Controllers
             // Check if sufficient stock is available
             if (inventory.AvailableStock < request.Quantity)
             {
-                // Auto-increase stock if not enough - for debugging
-                _logger.LogWarning("Not enough stock for product {ProductId}. Auto-incrementing from {Available} to {Needed}", 
+                _logger.LogWarning("Not enough stock for product {ProductId}. Available: {Available}, Needed: {Needed}", 
                     request.ProductId, inventory.AvailableStock, request.Quantity);
                 
-                inventory.TotalStock += request.Quantity;
-                inventory.AvailableStock += request.Quantity;
-                await _context.SaveChangesAsync();
-                
-                _logger.LogInformation("Stock auto-incremented for product {ProductId}. New AvailableStock: {Stock}", 
-                    request.ProductId, inventory.AvailableStock);
+                return BadRequest(new { 
+                    error = "Not enough stock",
+                    available = inventory.AvailableStock,
+                    requested = request.Quantity
+                });
             }
             
             // Use transaction to ensure atomicity
