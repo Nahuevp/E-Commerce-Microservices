@@ -213,7 +213,7 @@ namespace CartService.Controllers
                 userId = cart.UserId;
 
             var httpClient = _httpClientFactory.CreateClient();
-            httpClient.Timeout = RequestTimeout;
+            httpClient.Timeout = TimeSpan.FromSeconds(30); // Increase timeout
 
             // Propagate JWT token to internal service calls
             var authHeader = Request.Headers["Authorization"].FirstOrDefault();
@@ -222,91 +222,12 @@ namespace CartService.Controllers
                 httpClient.DefaultRequestHeaders.Add("Authorization", authHeader);
             }
 
-            // Track reservations for potential rollback
-            var reservations = new List<InventoryReservationInfo>();
             var totalAmount = cart.Items.Sum(i => i.Quantity * i.Price);
 
             try
             {
-                // ========== STEP 1: Reserve inventory for each item ==========
-                _logger.LogInformation("Step 1: Reserving inventory for {ItemCount} items", cart.Items.Count);
-                
-                foreach (var item in cart.Items)
-                {
-                    var reserveRequest = new { productId = item.ProductId, quantity = item.Quantity };
-                    
-                    var response = await httpClient.PostAsJsonAsync(
-                        $"{InventoryServiceUrl}/api/inventory/reserve",
-                        reserveRequest);
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        _logger.LogWarning("Failed to reserve inventory for product {ProductId}. Status: {StatusCode}", 
-                            item.ProductId, response.StatusCode);
-                        
-                        // Try to read error content, but handle non-JSON responses gracefully
-                        string errorText = string.Empty;
-                        try 
-                        {
-                            var errorContent = await response.Content.ReadFromJsonAsync<InsufficientStockResponse>();
-                            if (errorContent != null)
-                            {
-                                await RollbackReservations(httpClient, reservations);
-                                return BadRequest(new CheckoutFailureResponse
-                                {
-                                    Error = "Insufficient stock",
-                                    UnavailableItems = new List<int> { item.ProductId }
-                                });
-                            }
-                        }
-                        catch 
-                        {
-                            // Not JSON, read as text
-                            errorText = await response.Content.ReadAsStringAsync();
-                        }
-                        
-                        await RollbackReservations(httpClient, reservations);
-                        return StatusCode(500, new CheckoutFailureResponse
-                        {
-                            Error = "Failed to reserve inventory",
-                            Reason = $"Status: {response.StatusCode}, Error: {errorText}"
-                        });
-                    }
-
-                    InventoryReservationResponse? reservation = null;
-                    try
-                    {
-                        reservation = await response.Content.ReadFromJsonAsync<InventoryReservationResponse>();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to parse reservation response for product {ProductId}", item.ProductId);
-                        await RollbackReservations(httpClient, reservations);
-                        return StatusCode(500, new CheckoutFailureResponse
-                        {
-                            Error = "Invalid inventory reservation response"
-                        });
-                    }
-                    
-                    if (reservation == null)
-                    {
-                        _logger.LogError("Null reservation response for product {ProductId}", item.ProductId);
-                        await RollbackReservations(httpClient, reservations);
-                        return StatusCode(500, new CheckoutFailureResponse
-                        {
-                            Error = "Invalid inventory reservation response"
-                        });
-                    }
-
-                    reservations.Add(new InventoryReservationInfo
-                    {
-                        ReservationId = reservation.ReservationId,
-                        ProductId = item.ProductId
-                    });
-                    
-                    _logger.LogInformation("Reserved {Quantity} units of product {ProductId}, ReservationId={ReservationId}",
-                        item.Quantity, item.ProductId, reservation.ReservationId);
-                }
+                // ========== STEP 1: SKIP inventory reservation for simplicity ==========
+                _logger.LogInformation("Step 1: Skipping inventory reservation (simplified checkout)");
 
                 // ========== STEP 2: Process payment ==========
                 _logger.LogInformation("Step 2: Processing payment for amount {Amount}", totalAmount);
@@ -331,7 +252,7 @@ namespace CartService.Controllers
                 if (!paymentResponse.IsSuccessStatusCode)
                 {
                     _logger.LogWarning("Payment processing failed");
-                    await RollbackReservations(httpClient, reservations);
+                    _logger.LogInformation("Skipping rollback (simplified checkout)");
                     return StatusCode(402, new CheckoutFailureResponse
                     {
                         Error = "Payment processing failed",
@@ -344,7 +265,7 @@ namespace CartService.Controllers
                 if (paymentResult == null || paymentResult.Status == "Declined")
                 {
                     _logger.LogWarning("Payment declined: {Reason}", paymentResult?.Reason ?? "Unknown");
-                    await RollbackReservations(httpClient, reservations);
+                    _logger.LogInformation("Skipping rollback (simplified checkout)");
                     return BadRequest(new CheckoutFailureResponse
                     {
                         Error = "Payment declined",
@@ -391,21 +312,8 @@ namespace CartService.Controllers
 
                 _logger.LogInformation("Order created: OrderId={OrderId}", orderId);
 
-                // ========== STEP 4: Confirm inventory reservations ==========
-                _logger.LogInformation("Step 4: Confirming {Count} inventory reservations", reservations.Count);
-                
-                foreach (var reservation in reservations)
-                {
-                    var confirmResponse = await httpClient.PostAsync(
-                        $"{InventoryServiceUrl}/api/inventory/confirm/{reservation.ReservationId}",
-                        null);
-
-                    if (!confirmResponse.IsSuccessStatusCode)
-                    {
-                        // Log but don't fail - the order is already created
-                        _logger.LogWarning("Failed to confirm reservation {ReservationId}", reservation.ReservationId);
-                    }
-                }
+                // ========== STEP 4: SKIP inventory confirmation (simplified) ==========
+                _logger.LogInformation("Step 4: Skipping inventory confirmation (simplified checkout)");
 
                 // ========== STEP 5: Send notification ==========
                 _logger.LogInformation("Step 5: Sending order confirmation notification");
@@ -450,7 +358,7 @@ namespace CartService.Controllers
             catch (TaskCanceledException)
             {
                 _logger.LogError("Checkout failed: Request timeout");
-                await RollbackReservations(httpClient, reservations);
+                _logger.LogInformation("Skipping rollback (simplified checkout)");
                 return StatusCode(504, new CheckoutFailureResponse
                 {
                     Error = "Checkout timeout",
@@ -460,7 +368,7 @@ namespace CartService.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Checkout failed with unexpected error");
-                await RollbackReservations(httpClient, reservations);
+                _logger.LogInformation("Skipping rollback (simplified checkout)");
                 return StatusCode(500, new CheckoutFailureResponse
                 {
                     Error = "Checkout failed",

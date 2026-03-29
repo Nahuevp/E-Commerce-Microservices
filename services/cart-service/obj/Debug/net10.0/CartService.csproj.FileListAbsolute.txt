@@ -131,3 +131,4 @@ C:\Proyectos Visual\E-Commerce Microservices\services\cart-service\obj\Debug\net
 C:\Proyectos Visual\E-Commerce Microservices\services\cart-service\obj\Debug\net10.0\ref\CartService.dll
 C:\Proyectos Visual\E-Commerce Microservices\services\cart-service\bin\Debug\net10.0\appsettings.Development.json
 C:\Proyectos Visual\E-Commerce Microservices\services\cart-service\bin\Debug\net10.0\appsettings.json
+C:\Proyectos Visual\E-Commerce Microservices\services\cart-service\obj\Debug\net10.0\CartService.sourcelink.json
