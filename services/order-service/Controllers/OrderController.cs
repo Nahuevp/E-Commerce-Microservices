@@ -14,8 +14,9 @@ namespace OrderService.Controllers
         private readonly OrderDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
         
-        // Inventory service URL
+        // Service URLs
         private const string InventoryServiceUrl = "http://127.0.0.1:8007";
+        private const string ProductServiceUrl = "http://127.0.0.1:8002";
 
         public OrderController(OrderDbContext context, IHttpClientFactory httpClientFactory)
         {
@@ -73,10 +74,15 @@ namespace OrderService.Controllers
             var order = await _context.Orders.FindAsync(id);
             if (order == null) return NotFound("Order not found");
 
-            // Return stock to inventory before deleting order
+            if (order.Status?.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) == true)
+                return BadRequest("Order is already cancelled");
+
+            // Return stock to inventory and sync product service before cancelling order
             try
             {
                 var httpClient = _httpClientFactory.CreateClient();
+                
+                // 1. Return to Inventory Service
                 var inventoryRequest = new
                 {
                     ProductId = order.ProductId,
@@ -89,15 +95,34 @@ namespace OrderService.Controllers
                 
                 if (inventoryResponse.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"Stock returned for product {order.ProductId}: +{order.Quantity}");
+                    Console.WriteLine($"Stock returned to inventory for product {order.ProductId}: +{order.Quantity}");
+                }
+
+                // 2. Sync stock back to Product Service so frontend updates correctly
+                try
+                {
+                    var stockUpdateResponse = await httpClient.PutAsJsonAsync(
+                        $"{ProductServiceUrl}/products/{order.ProductId}/stock",
+                        new { delta = order.Quantity }); // Positive delta to add back stock
+                    
+                    if (stockUpdateResponse.IsSuccessStatusCode)
+                        Console.WriteLine($"Synced product stock for {order.ProductId}: +{order.Quantity}");
+                    else
+                        Console.WriteLine($"Failed to sync product stock for {order.ProductId}: {stockUpdateResponse.StatusCode}");
+                }
+                catch (Exception stockEx)
+                {
+                    Console.WriteLine($"Warning: Could not sync product stock for {order.ProductId}: {stockEx.Message}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Warning: Could not return stock to inventory: {ex.Message}");
+                Console.WriteLine($"Warning: Could not return stock: {ex.Message}");
             }
 
-            _context.Orders.Remove(order);
+            // Update status instead of hard deleting
+            order.Status = "Cancelled";
+            _context.Orders.Update(order);
             await _context.SaveChangesAsync();
             return NoContent();
         }
