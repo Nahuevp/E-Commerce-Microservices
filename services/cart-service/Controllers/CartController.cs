@@ -318,16 +318,19 @@ namespace CartService.Controllers
 
                 _logger.LogInformation("Order created: OrderId={OrderId}", orderId);
 
-                // ========== STEP 4: Decrement inventory stock ==========
-                _logger.LogInformation("Step 4: Decrementing inventory stock for {Count} items", validItems.Count);
+                // ========== STEP 4: Decrement inventory AND product stock ==========
+                _logger.LogInformation("Step 4: Decrementing stock for {Count} items", validItems.Count);
+                
+                const string ProductServiceUrl = "http://127.0.0.1:8002";
                 
                 foreach (var item in validItems)
                 {
                     try
                     {
-                        _logger.LogInformation("Calling inventory decrement for ProductId={ProductId}, Quantity={Quantity}", 
+                        _logger.LogInformation("Processing ProductId={ProductId}, Quantity={Quantity}", 
                             item.ProductId, item.Quantity);
                             
+                        // Decrement in Inventory service
                         var inventoryRequest = new
                         {
                             ProductId = item.ProductId,
@@ -338,13 +341,35 @@ namespace CartService.Controllers
                             $"{InventoryServiceUrl}/api/inventory/decrement",
                             inventoryRequest);
                         
-                        var responseContent = await inventoryResponse.Content.ReadAsStringAsync();
-                        _logger.LogInformation("Inventory response: {Status} - {Content}", inventoryResponse.StatusCode, responseContent);
+                        // Also update Product service stock (for UI display)
+                        try
+                        {
+                            var productUpdateRequest = new
+                            {
+                                delta = -item.Quantity // Negative to decrement
+                            };
+                            
+                            var productResponse = await httpClient.PutAsJsonAsync(
+                                $"{ProductServiceUrl}/api/products/{item.ProductId}/stock",
+                                productUpdateRequest);
+                            
+                            if (productResponse.IsSuccessStatusCode)
+                            {
+                                _logger.LogInformation("Updated Product stock for {ProductId}", item.ProductId);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to update Product stock: {Status}", productResponse.StatusCode);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Error updating Product stock");
+                        }
                         
                         if (inventoryResponse.IsSuccessStatusCode)
                         {
-                            _logger.LogInformation("Decremented stock for product {ProductId} by {Quantity}", 
-                                item.ProductId, item.Quantity);
+                            _logger.LogInformation("Decremented inventory for product {ProductId}", item.ProductId);
                         }
                         else
                         {

@@ -68,5 +68,45 @@ namespace ProductService.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
+
+        /// <summary>
+        /// Update stock by delta (positive = add, negative = subtract)
+        /// PUT /products/{id}/stock
+        /// </summary>
+        [HttpPut("{id}/stock")]
+        [AllowAnonymous]
+        public async Task<IActionResult> UpdateStock(int id, [FromBody] StockUpdateRequest request)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null) return NotFound("Product not found");
+
+            // If delta is provided, add it to current stock
+            if (request.Delta.HasValue)
+            {
+                product.Stock += request.Delta.Value;
+            }
+            // If newStock is provided, set it directly
+            else if (request.NewStock.HasValue)
+            {
+                product.Stock = request.NewStock.Value;
+            }
+            // Otherwise just return current stock
+            else
+            {
+                return Ok(product);
+            }
+
+            if (product.Stock < 0)
+                product.Stock = 0;
+
+            await _context.SaveChangesAsync();
+            return Ok(product);
+        }
+    }
+
+    public class StockUpdateRequest
+    {
+        public int? Delta { get; set; }      // Add/subtract from current stock
+        public int? NewStock { get; set; }   // Set directly
     }
 }

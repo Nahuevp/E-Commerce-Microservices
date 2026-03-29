@@ -399,12 +399,15 @@ async function loadProducts() {
 }
 
 function renderProducts(products) {
-    if (products.length === 0) {
+    // Filter out invalid products (id <= 0)
+    const validProducts = products.filter(p => p.id && p.id > 0);
+    
+    if (validProducts.length === 0) {
         productsList.innerHTML = '<p>No products available. Add some directly to the DB!</p>';
         return;
     }
 
-    productsList.innerHTML = products.map(p => {
+    productsList.innerHTML = validProducts.map(p => {
         // Determine stock status
         const stockStatus = p.stock === 0 ? 'out-of-stock' : p.stock <= 5 ? 'low-stock' : 'in-stock';
         const stockText = p.stock === 0 ? 'Out of Stock' : p.stock <= 5 ? `Only ${p.stock} left` : `${p.stock} in stock`;
@@ -665,6 +668,12 @@ async function createCart() {
 }
 
 async function addToCart(productId, price, quantity = 1) {
+    // Validate product
+    if (!productId || productId <= 0) {
+        showToast('Invalid product', 'error');
+        return;
+    }
+    
     const userId = getUserId();
     if (!userId) {
         showToast('Please login to add items to cart', 'warning');
