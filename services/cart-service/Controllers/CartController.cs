@@ -304,14 +304,15 @@ namespace CartService.Controllers
 
                     if (!orderResponse.IsSuccessStatusCode)
                     {
-                        _logger.LogError("Failed to create order for product {ProductId}: {Status}", 
-                            item.ProductId, orderResponse.StatusCode);
+                        var errorContent = await orderResponse.Content.ReadAsStringAsync();
+                        _logger.LogError("Failed to create order for product {ProductId}: {Status} - {Error}", 
+                            item.ProductId, orderResponse.StatusCode, errorContent);
                         // Note: We don't rollback payment here as it's already processed
                         // In a real system, you'd have a compensation transaction
                         return StatusCode(500, new CheckoutFailureResponse
                         {
                             Error = "Failed to create order",
-                            Reason = $"Order creation failed for product {item.ProductId}"
+                            Reason = $"Order creation failed for product {item.ProductId}: {errorContent}"
                         });
                     }
 
