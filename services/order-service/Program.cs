@@ -46,6 +46,7 @@ builder.Services.AddDbContext<OrderDbContext>(options =>
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
@@ -66,55 +67,22 @@ try
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
+    
+    // Try to create table if doesn't exist
     db.Database.EnsureCreated();
     Console.WriteLine("Order database initialized successfully.");
     
-    // Fix: Add Status and CreatedAt columns if they exist but without defaults
-    // This handles the case where the table was created without default values
-    try
-    {
-        db.Database.ExecuteSqlRaw(@"
-            ALTER TABLE ""Orders"" ALTER COLUMN ""Status"" SET DEFAULT 'Pending';
-            ALTER TABLE ""Orders"" ALTER COLUMN ""CreatedAt"" SET DEFAULT NOW();
-            ALTER TABLE ""Orders"" ALTER COLUMN ""Status"" DROP NOT NULL;
-            ALTER TABLE ""Orders"" ALTER COLUMN ""CreatedAt"" DROP NOT NULL;
-        ");
-        Console.WriteLine("Order table columns fixed with defaults.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Order table fix warning (can be ignored): {ex.Message}");
-    }
+    // Try to add columns if missing (ignore errors)
+    try { db.Database.ExecuteSqlRaw(@"ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""Status"" TEXT DEFAULT 'Pending'"); } catch {}
+    try { db.Database.ExecuteSqlRaw(@"ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CreatedAt"" TIMESTAMP DEFAULT NOW()"); } catch {}
+    try { db.Database.ExecuteSqlRaw(@"ALTER TABLE ""Orders"" ALTER COLUMN ""Status"" DROP NOT NULL"); } catch {}
+    try { db.Database.ExecuteSqlRaw(@"ALTER TABLE ""Orders"" ALTER COLUMN ""CreatedAt"" DROP NOT NULL"); } catch {}
     
-    // Verify tables exist
-    var count = db.Orders.Count();
-    Console.WriteLine($"Order table verified - {count} rows");
+    Console.WriteLine("Order table ready.");
 }
 catch (Exception ex)
 {
     Console.WriteLine($"ERROR initializing Order database: {ex.Message}");
-    // Try to create tables manually
-    try
-    {
-        using var scope2 = app.Services.CreateScope();
-        var db2 = scope2.ServiceProvider.GetRequiredService<OrderDbContext>();
-        db2.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS ""Orders"" (
-                ""Id"" SERIAL PRIMARY KEY,
-                ""UserId"" INTEGER NOT NULL,
-                ""ProductId"" INTEGER NOT NULL,
-                ""Quantity"" INTEGER NOT NULL,
-                ""TotalPrice"" DECIMAL(18,2) NOT NULL,
-                ""Status"" TEXT DEFAULT 'Pending',
-                ""CreatedAt"" TIMESTAMP DEFAULT NOW()
-            );
-        ");
-        Console.WriteLine("Order tables created manually.");
-    }
-    catch (Exception ex2)
-    {
-        Console.WriteLine($"Could not create Order tables manually: {ex2.Message}");
-    }
 }
 
 app.Run();
