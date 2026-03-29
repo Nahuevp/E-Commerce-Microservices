@@ -319,12 +319,15 @@ namespace CartService.Controllers
                 _logger.LogInformation("Order created: OrderId={OrderId}", orderId);
 
                 // ========== STEP 4: Decrement inventory stock ==========
-                _logger.LogInformation("Step 4: Decrementing inventory stock");
+                _logger.LogInformation("Step 4: Decrementing inventory stock for {Count} items", validItems.Count);
                 
-                foreach (var item in cart.Items)
+                foreach (var item in validItems)
                 {
                     try
                     {
+                        _logger.LogInformation("Calling inventory decrement for ProductId={ProductId}, Quantity={Quantity}", 
+                            item.ProductId, item.Quantity);
+                            
                         var inventoryRequest = new
                         {
                             ProductId = item.ProductId,
@@ -334,6 +337,9 @@ namespace CartService.Controllers
                         var inventoryResponse = await httpClient.PostAsJsonAsync(
                             $"{InventoryServiceUrl}/api/inventory/decrement",
                             inventoryRequest);
+                        
+                        var responseContent = await inventoryResponse.Content.ReadAsStringAsync();
+                        _logger.LogInformation("Inventory response: {Status} - {Content}", inventoryResponse.StatusCode, responseContent);
                         
                         if (inventoryResponse.IsSuccessStatusCode)
                         {
