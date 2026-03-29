@@ -426,6 +426,84 @@ namespace InventoryService.Controllers
                 _logger.LogError(ex, "Failed to expire reservation {ReservationId}", reservation.Id);
             }
         }
+
+        /// <summary>
+        /// Decrement stock after purchase - no auth needed for internal calls
+        /// POST /api/inventory/decrement
+        /// </summary>
+        [HttpPost("decrement")]
+        [AllowAnonymous]
+        public async Task<IActionResult> DecrementStock([FromBody] DecrementStockRequest request)
+        {
+            var inventory = await _context.Inventories.FirstOrDefaultAsync(i => i.ProductId == request.ProductId);
+            
+            if (inventory == null)
+            {
+                return BadRequest(new { Error = "Product not found in inventory" });
+            }
+
+            // Decrement available stock
+            inventory.AvailableStock -= request.Quantity;
+            inventory.TotalStock -= request.Quantity;
+
+            if (inventory.AvailableStock < 0 || inventory.TotalStock < 0)
+            {
+                return BadRequest(new { Error = "Insufficient stock", AvailableStock = inventory.AvailableStock + request.Quantity });
+            }
+
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Decremented stock for product {ProductId} by {Quantity}. New available: {Available}", 
+                request.ProductId, request.Quantity, inventory.AvailableStock);
+
+            return Ok(new { ProductId = request.ProductId, AvailableStock = inventory.AvailableStock, TotalStock = inventory.TotalStock });
+        }
+
+        /// <summary>
+        /// Increment stock when order is cancelled - returns stock to available
+        /// POST /api/inventory/increment
+        /// </summary>
+        [HttpPost("increment")]
+        [AllowAnonymous]
+        public async Task<IActionResult> IncrementStock([FromBody] DecrementStockRequest request)
+        {
+            var inventory = await _context.Inventories.FirstOrDefaultAsync(i => i.ProductId == request.ProductId);
+            
+            if (inventory == null)
+            {
+                // Auto-initialize if doesn't exist
+                inventory = new Inventory
+                {
+                    ProductId = request.ProductId,
+                    TotalStock = request.Quantity,
+                    AvailableStock = request.Quantity,
+                    ReservedStock = 0
+                };
+                _context.Inventories.Add(inventory);
+            }
+            else
+            {
+                // Increment stock back
+                inventory.AvailableStock += request.Quantity;
+                inventory.TotalStock += request.Quantity;
+            }
+
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Incremented stock for product {ProductId} by {Quantity}. New available: {Available}", 
+                request.ProductId, request.Quantity, inventory.AvailableStock);
+
+            return Ok(new { ProductId = request.ProductId, AvailableStock = inventory.AvailableStock, TotalStock = inventory.TotalStock });
+        }
+    }
+
+    /// <summary>
+    /// Request to decrement/increment stock
+    /// </summary>
+    public class DecrementStockRequest
+    {
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
     }
     
     public class UpdateInventoryRequest

@@ -226,11 +226,8 @@ namespace CartService.Controllers
 
             try
             {
-                // ========== STEP 1: SKIP inventory reservation for simplicity ==========
-                _logger.LogInformation("Step 1: Skipping inventory reservation (simplified checkout)");
-
-                // ========== STEP 2: Process payment ==========
-                _logger.LogInformation("Step 2: Processing payment for amount {Amount}", totalAmount);
+                // ========== STEP 1: Process payment first ==========
+                _logger.LogInformation("Step 1: Processing payment for amount {Amount}", totalAmount);
                 
                 var paymentRequest = new
                 {
@@ -312,8 +309,39 @@ namespace CartService.Controllers
 
                 _logger.LogInformation("Order created: OrderId={OrderId}", orderId);
 
-                // ========== STEP 4: SKIP inventory confirmation (simplified) ==========
-                _logger.LogInformation("Step 4: Skipping inventory confirmation (simplified checkout)");
+                // ========== STEP 4: Decrement inventory stock ==========
+                _logger.LogInformation("Step 4: Decrementing inventory stock");
+                
+                foreach (var item in cart.Items)
+                {
+                    try
+                    {
+                        var inventoryRequest = new
+                        {
+                            ProductId = item.ProductId,
+                            Quantity = item.Quantity
+                        };
+                        
+                        var inventoryResponse = await httpClient.PostAsJsonAsync(
+                            $"{InventoryServiceUrl}/api/inventory/decrement",
+                            inventoryRequest);
+                        
+                        if (inventoryResponse.IsSuccessStatusCode)
+                        {
+                            _logger.LogInformation("Decremented stock for product {ProductId} by {Quantity}", 
+                                item.ProductId, item.Quantity);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Failed to decrement stock for product {ProductId}: {Status}", 
+                                item.ProductId, inventoryResponse.StatusCode);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error decrementing stock for product {ProductId}", item.ProductId);
+                    }
+                }
 
                 // ========== STEP 5: Send notification ==========
                 _logger.LogInformation("Step 5: Sending order confirmation notification");

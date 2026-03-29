@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Models;
+using System.Net.Http.Json;
 
 namespace OrderService.Controllers
 {
@@ -11,10 +12,15 @@ namespace OrderService.Controllers
     public class OrderController : ControllerBase
     {
         private readonly OrderDbContext _context;
+        private readonly IHttpClientFactory _httpClientFactory;
+        
+        // Inventory service URL
+        private const string InventoryServiceUrl = "http://127.0.0.1:8007";
 
-        public OrderController(OrderDbContext context)
+        public OrderController(OrderDbContext context, IHttpClientFactory httpClientFactory)
         {
             _context = context;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet]
@@ -58,6 +64,30 @@ namespace OrderService.Controllers
         {
             var order = await _context.Orders.FindAsync(id);
             if (order == null) return NotFound("Order not found");
+
+            // Return stock to inventory before deleting order
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient();
+                var inventoryRequest = new
+                {
+                    ProductId = order.ProductId,
+                    Quantity = order.Quantity
+                };
+                
+                var inventoryResponse = await httpClient.PostAsJsonAsync(
+                    $"{InventoryServiceUrl}/api/inventory/increment",
+                    inventoryRequest);
+                
+                if (inventoryResponse.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Stock returned for product {order.ProductId}: +{order.Quantity}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Could not return stock to inventory: {ex.Message}");
+            }
 
             _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
