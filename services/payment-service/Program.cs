@@ -69,6 +69,21 @@ try
     db.Database.EnsureCreated();
     Console.WriteLine("Payment database initialized successfully.");
     
+    // Fix: Ensure all required columns exist with proper defaults
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            ALTER TABLE ""Payments"" ALTER COLUMN ""Status"" SET DEFAULT 'Pending';
+            ALTER TABLE ""Payments"" ALTER COLUMN ""CreatedAt"" SET DEFAULT NOW();
+            ALTER TABLE ""Payments"" ALTER COLUMN ""CardNumber"" DROP NOT NULL;
+        ");
+        Console.WriteLine("Payment table columns fixed with defaults.");
+    }
+    catch
+    {
+        // Columns might already have defaults or don't exist - ignore
+    }
+    
     // Verify tables exist
     var count = db.Payments.Count();
     Console.WriteLine($"Payment table verified - {count} rows");
@@ -87,10 +102,10 @@ catch (Exception ex)
                 ""OrderId"" INTEGER NOT NULL,
                 ""Amount"" DECIMAL(18,2) NOT NULL,
                 ""CardNumber"" TEXT,
-                ""Status"" TEXT NOT NULL,
+                ""Status"" TEXT DEFAULT 'Pending',
                 ""TransactionId"" TEXT,
                 ""Reason"" TEXT,
-                ""CreatedAt"" TIMESTAMP NOT NULL
+                ""CreatedAt"" TIMESTAMP DEFAULT NOW()
             );
         ");
         Console.WriteLine("Payment tables created manually.");
