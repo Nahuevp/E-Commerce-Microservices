@@ -41,6 +41,12 @@ namespace OrderService.Controllers
                with the Product Service or asynchronously via an event bus (e.g. RabbitMQ).
                For this basic architecture demo, we'll just save the order assuming product exists. */
 
+            // Ensure required fields have values (in case they weren't sent in request)
+            if (string.IsNullOrEmpty(order.Status))
+                order.Status = "Pending";
+            if (order.CreatedAt == default)
+                order.CreatedAt = DateTime.UtcNow;
+
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);

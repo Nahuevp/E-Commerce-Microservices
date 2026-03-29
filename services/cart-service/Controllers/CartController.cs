@@ -234,14 +234,14 @@ namespace CartService.Controllers
                 
                 var paymentRequest = new
                 {
-                    orderId = 0, // Will update after order creation, but payment needs to be processed first
-                    amount = totalAmount,
-                    cardNumber = request.CardNumber
+                    OrderId = 0, // Will update after order creation, but payment needs to be processed first
+                    Amount = totalAmount,
+                    CardNumber = request.CardNumber
                 };
 
-                _logger.LogInformation("Sending payment request: orderId={OrderId}, amount={Amount}, cardNumber={Card}", 
-                    paymentRequest.orderId, paymentRequest.amount, 
-                    string.IsNullOrEmpty(paymentRequest.cardNumber) ? "EMPTY" : "provided");
+                _logger.LogInformation("Sending payment request: OrderId={OrderId}, Amount={Amount}, CardNumber={Card}", 
+                    paymentRequest.OrderId, paymentRequest.Amount, 
+                    string.IsNullOrEmpty(paymentRequest.CardNumber) ? "EMPTY" : "provided");
 
                 var paymentResponse = await httpClient.PostAsJsonAsync(
                     $"{PaymentServiceUrl}/api/payments",
@@ -284,10 +284,10 @@ namespace CartService.Controllers
                 {
                     var orderRequest = new
                     {
-                        userId = userId,
-                        productId = item.ProductId,
-                        quantity = item.Quantity,
-                        totalPrice = item.Quantity * item.Price
+                        UserId = userId,
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        TotalPrice = item.Quantity * item.Price
                     };
 
                     var orderResponse = await httpClient.PostAsJsonAsync(

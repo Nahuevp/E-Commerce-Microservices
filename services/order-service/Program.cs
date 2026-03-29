@@ -69,6 +69,21 @@ try
     db.Database.EnsureCreated();
     Console.WriteLine("Order database initialized successfully.");
     
+    // Fix: Add Status and CreatedAt columns if they exist but without defaults
+    // This handles the case where the table was created without default values
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            ALTER TABLE ""Orders"" ALTER COLUMN ""Status"" SET DEFAULT 'Pending';
+            ALTER TABLE ""Orders"" ALTER COLUMN ""CreatedAt"" SET DEFAULT NOW();
+        ");
+        Console.WriteLine("Order table columns fixed with defaults.");
+    }
+    catch
+    {
+        // Columns might already have defaults or don't exist - ignore
+    }
+    
     // Verify tables exist
     var count = db.Orders.Count();
     Console.WriteLine($"Order table verified - {count} rows");
@@ -88,8 +103,8 @@ catch (Exception ex)
                 ""ProductId"" INTEGER NOT NULL,
                 ""Quantity"" INTEGER NOT NULL,
                 ""TotalPrice"" DECIMAL(18,2) NOT NULL,
-                ""Status"" TEXT NOT NULL,
-                ""CreatedAt"" TIMESTAMP NOT NULL
+                ""Status"" TEXT DEFAULT 'Pending',
+                ""CreatedAt"" TIMESTAMP DEFAULT NOW()
             );
         ");
         Console.WriteLine("Order tables created manually.");
