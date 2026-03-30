@@ -99,7 +99,7 @@ namespace CartService.Controllers
             try
             {
                 var httpClient = _httpClientFactory.CreateClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(3); // Fast timeout for responsiveness
+                httpClient.Timeout = TimeSpan.FromSeconds(10); // Aumentado a 10s para contenedores chicos
                 var availabilityResponse = await httpClient.GetAsync($"{InventoryServiceUrl}/api/inventory/{request.ProductId}/availability");
                 
                 if (availabilityResponse.IsSuccessStatusCode)
@@ -118,7 +118,9 @@ namespace CartService.Controllers
             catch (Exception ex)
             {
                 _logger.LogWarning($"Could not verify inventory: {ex.Message}");
-                // If inventory is down, we proceed for resilience, though it might fail at checkout.
+                // Si el inventario no responde, NO procedemos por resiliencia. Bloqueamos.
+                // Es preferible fallar que vender stock que no tenemos.
+                return StatusCode(503, new { error = "Inventory service is unavailable to verify stock. Please try again in a moment." });
             }
 
             if (existingItem != null)
@@ -171,7 +173,7 @@ namespace CartService.Controllers
                     try
                     {
                         var httpClient = _httpClientFactory.CreateClient();
-                        httpClient.Timeout = TimeSpan.FromSeconds(3);
+                        httpClient.Timeout = TimeSpan.FromSeconds(10);
                         var availabilityResponse = await httpClient.GetAsync($"{InventoryServiceUrl}/api/inventory/{cartItem.ProductId}/availability");
                         
                         if (availabilityResponse.IsSuccessStatusCode)
@@ -186,6 +188,7 @@ namespace CartService.Controllers
                     catch (Exception ex)
                     {
                         _logger.LogWarning($"Could not verify inventory: {ex.Message}");
+                        return StatusCode(503, new { error = "Inventory service is unavailable. Please try again in a moment." });
                     }
                 }
 
@@ -307,6 +310,12 @@ namespace CartService.Controllers
                     catch (Exception ex)
                     {
                         _logger.LogWarning($"Could not verify inventory for ProductId={item.ProductId}: {ex.Message}");
+                        // NUNCA ignorar el error antes de cobrar. Si el inventario no está, no cobramos.
+                        return StatusCode(503, new CheckoutFailureResponse
+                        {
+                            Error = "Service Unavailable",
+                            Reason = "Could not verify stock availability at this time."
+                        });
                     }
                 }
 

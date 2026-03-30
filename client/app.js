@@ -704,8 +704,15 @@ async function addToCart(productId, price, quantity = 1) {
         } else if (response.status === 401) {
             logout();
         } else {
-            const error = await response.text();
-            showToast(error || 'Failed to add to cart', 'error');
+            let errorMsg = 'Failed to add to cart';
+            try {
+                const text = await response.text();
+                const errorData = JSON.parse(text);
+                errorMsg = errorData.error || errorData.reason || errorMsg;
+            } catch (e) {
+                // If not JSON, it might just be text
+            }
+            showToast(errorMsg, 'error');
         }
     } catch (error) {
         showToast('Connection error', 'error', () => addToCart(productId, price, quantity));
@@ -727,7 +734,15 @@ async function updateCartItem(itemId, quantity) {
         } else if (response.status === 401) {
             logout();
         } else {
-            showToast('Failed to update quantity', 'error');
+            let errorMsg = 'Failed to update quantity';
+            try {
+                const text = await response.text();
+                const errorData = JSON.parse(text);
+                errorMsg = errorData.error || errorData.reason || errorMsg;
+            } catch (e) {
+                // If not JSON, keep default message
+            }
+            showToast(errorMsg, 'error');
         }
     } catch (error) {
         showToast('Connection error', 'error', () => updateCartItem(itemId, quantity));
