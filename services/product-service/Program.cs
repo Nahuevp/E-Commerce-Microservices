@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using ProductService.Data;
 using ProductService.Extensions;
+using Polly;
+using Polly.Extensions.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +23,12 @@ if (!string.IsNullOrEmpty(databaseUrl))
 }
 
 builder.Services.AddControllers();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient()
+    .AddTransientHttpErrorPolicy(policyBuilder => 
+        policyBuilder.WaitAndRetryAsync(
+            3, 
+            retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
+        ));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

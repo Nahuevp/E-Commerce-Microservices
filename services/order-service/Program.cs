@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Extensions;
+using Polly;
+using Polly.Extensions.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +48,12 @@ builder.Services.AddDbContext<OrderDbContext>(options =>
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient()
+    .AddTransientHttpErrorPolicy(policyBuilder => 
+        policyBuilder.WaitAndRetryAsync(
+            3, 
+            retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
+        ));
 
 var app = builder.Build();
 
