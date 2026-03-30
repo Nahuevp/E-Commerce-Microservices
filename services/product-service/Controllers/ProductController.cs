@@ -11,10 +11,12 @@ namespace ProductService.Controllers
     public class ProductController : ControllerBase
     {
         private readonly ProductDbContext _context;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public ProductController(ProductDbContext context)
+        public ProductController(ProductDbContext context, IHttpClientFactory httpClientFactory)
         {
             _context = context;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet]
@@ -66,6 +68,19 @@ namespace ProductService.Controllers
 
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
+            
+            // Avisar al CartService que elimine el producto de todos los carritos
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(5);
+                await client.DeleteAsync($"http://127.0.0.1:8004/carts/products/{id}");
+            }
+            catch (Exception)
+            {
+                // Silencioso. Si el CartService no responde, igual borramos el producto.
+            }
+
             return NoContent();
         }
 

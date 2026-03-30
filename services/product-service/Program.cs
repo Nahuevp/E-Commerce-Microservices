@@ -21,6 +21,7 @@ if (!string.IsNullOrEmpty(databaseUrl))
 }
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

@@ -233,6 +233,23 @@ namespace CartService.Controllers
         }
 
         /// <summary>
+        /// Remove all items of a specific product from all carts (called when a product is deleted)
+        /// </summary>
+        [HttpDelete("products/{productId}")]
+        [AllowAnonymous] // Internal service call
+        public async Task<IActionResult> RemoveProductFromAllCarts(int productId)
+        {
+            var cartItems = await _context.CartItems.Where(i => i.ProductId == productId).ToListAsync();
+            if (cartItems.Any())
+            {
+                _context.CartItems.RemoveRange(cartItems);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Removed {Count} items for deleted product {ProductId} from carts", cartItems.Count, productId);
+            }
+            return Ok(new { message = "Product removed from all carts" });
+        }
+
+        /// <summary>
         /// Complete checkout saga - reserves inventory, processes payment, creates order
         /// with full rollback support if any step fails
         /// </summary>

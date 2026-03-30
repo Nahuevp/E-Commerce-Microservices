@@ -20,6 +20,7 @@ const SERVICES_CONFIG = [
 let currentCart = null;
 let currentCartId = null;
 let serviceHealthStatus = {};
+let globalProducts = [];
 
 // DOM Elements
 const authSection = document.getElementById('auth-section');
@@ -387,6 +388,7 @@ async function loadProducts() {
         const response = await fetchWithAuth(`${API_BASE}/api/products`);
         if (response.ok) {
             const products = await response.json();
+            globalProducts = products;
             renderProducts(products);
         } else if (response.status === 401) {
             logout();
@@ -802,10 +804,13 @@ function renderCart() {
     cartEmpty.classList.add('hidden');
     cartSummary.classList.remove('hidden');
 
-    cartItemsContainer.innerHTML = currentCart.items.map(item => `
+    cartItemsContainer.innerHTML = currentCart.items.map(item => {
+        const product = globalProducts.find(p => p.id === item.productId);
+        const name = product ? escapeHtml(product.name) : `Product #${item.productId}`;
+        return `
         <div class="cart-item">
             <div class="cart-item-info">
-                <span class="cart-item-name">Product #${item.productId}</span>
+                <span class="cart-item-name">${name}</span>
                 <span class="cart-item-price">$${item.price.toFixed(2)}</span>
             </div>
             <div class="cart-item-actions">
@@ -818,7 +823,8 @@ function renderCart() {
                 <button onclick="removeFromCart(${item.id})" class="btn-remove">×</button>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     const total = currentCart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     cartTotalPrice.textContent = `$${total.toFixed(2)}`;
@@ -901,15 +907,19 @@ function renderCheckoutStep1() {
         return;
     }
 
-    checkoutItems.innerHTML = currentCart.items.map(item => `
+    checkoutItems.innerHTML = currentCart.items.map(item => {
+        const product = globalProducts.find(p => p.id === item.productId);
+        const name = product ? escapeHtml(product.name) : `Product #${item.productId}`;
+        return `
         <div class="checkout-item">
             <div class="checkout-item-info">
-                <span class="checkout-item-name">Product #${item.productId}</span>
+                <span class="checkout-item-name">${name}</span>
                 <span class="checkout-item-qty">x${item.quantity}</span>
             </div>
             <span class="checkout-item-price">$${(item.price * item.quantity).toFixed(2)}</span>
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     checkoutSubtotal.textContent = `$${checkoutData.total.toFixed(2)}`;
     checkoutTotal.textContent = `$${checkoutData.total.toFixed(2)}`;
