@@ -13,12 +13,39 @@ namespace InventoryService.Controllers
     {
         private readonly InventoryDbContext _context;
         private readonly ILogger<InventoryController> _logger;
+        private readonly IHttpClientFactory _httpClientFactory;
         private const int ReservationTtlMinutes = 15;
         
-        public InventoryController(InventoryDbContext context, ILogger<InventoryController> logger)
+        public InventoryController(InventoryDbContext context, ILogger<InventoryController> logger, IHttpClientFactory httpClientFactory)
         {
             _context = context;
             _logger = logger;
+            _httpClientFactory = httpClientFactory;
+        }
+
+        private async Task<int> GetInitialStockFromProductService(int productId)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(5);
+                var response = await client.GetAsync($"http://127.0.0.1:8002/products/{productId}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var product = System.Text.Json.JsonDocument.Parse(content);
+                    if (product.RootElement.TryGetProperty("stock", out var stockElement) && stockElement.TryGetInt32(out int stock))
+                    {
+                        return stock;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Could not fetch initial stock from product service: {ex.Message}");
+            }
+            return 0; // Default to 0 instead of 100 to prevent overselling
         }
         
         /// <summary>
@@ -36,12 +63,13 @@ namespace InventoryService.Controllers
             if (inventory == null)
             {
                 _logger.LogInformation("Auto-initializing inventory for product {ProductId}", productId);
+                int realStock = await GetInitialStockFromProductService(productId);
                 inventory = new Inventory
                 {
                     ProductId = productId,
-                    AvailableStock = 100,
+                    AvailableStock = realStock,
                     ReservedStock = 0,
-                    TotalStock = 100
+                    TotalStock = realStock
                 };
                 _context.Inventories.Add(inventory);
                 await _context.SaveChangesAsync();
@@ -77,12 +105,13 @@ namespace InventoryService.Controllers
             if (inventory == null)
             {
                 _logger.LogInformation("Auto-initializing inventory for product {ProductId}", request.ProductId);
+                int realStock = await GetInitialStockFromProductService(request.ProductId);
                 inventory = new Inventory
                 {
                     ProductId = request.ProductId,
-                    AvailableStock = 100, // Default stock
+                    AvailableStock = realStock,
                     ReservedStock = 0,
-                    TotalStock = 100
+                    TotalStock = realStock
                 };
                 _context.Inventories.Add(inventory);
                 await _context.SaveChangesAsync();
@@ -437,13 +466,14 @@ namespace InventoryService.Controllers
             
             if (inventory == null)
             {
-                // Auto-initialize inventory if doesn't exist (allow negative for simplicity)
-                _logger.LogWarning("Product {ProductId} not in inventory, creating entry with negative stock", request.ProductId);
+                // Auto-initialize inventory if doesn't exist
+                _logger.LogWarning("Product {ProductId} not in inventory, fetching from ProductService before decrementing", request.ProductId);
+                int realStock = await GetInitialStockFromProductService(request.ProductId);
                 inventory = new Inventory
                 {
                     ProductId = request.ProductId,
-                    TotalStock = -request.Quantity,
-                    AvailableStock = -request.Quantity,
+                    TotalStock = realStock - request.Quantity,
+                    AvailableStock = realStock - request.Quantity,
                     ReservedStock = 0
                 };
                 _context.Inventories.Add(inventory);
@@ -484,11 +514,12 @@ namespace InventoryService.Controllers
             if (inventory == null)
             {
                 // Auto-initialize if doesn't exist
+                int realStock = await GetInitialStockFromProductService(request.ProductId);
                 inventory = new Inventory
                 {
                     ProductId = request.ProductId,
-                    TotalStock = request.Quantity,
-                    AvailableStock = request.Quantity,
+                    TotalStock = realStock + request.Quantity,
+                    AvailableStock = realStock + request.Quantity,
                     ReservedStock = 0
                 };
                 _context.Inventories.Add(inventory);
