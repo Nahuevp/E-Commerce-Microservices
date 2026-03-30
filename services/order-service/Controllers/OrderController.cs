@@ -26,9 +26,15 @@ namespace OrderService.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetOrders()
+        public async Task<IActionResult> GetOrders([FromQuery] int limit = 10)
         {
-            return Ok(await _context.Orders.ToListAsync());
+            // Traemos solo las últimas (limit) órdenes, ordenadas descendentemente por fecha
+            var orders = await _context.Orders
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(limit)
+                .ToListAsync();
+
+            return Ok(orders);
         }
 
         [HttpGet("{id}")]
