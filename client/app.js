@@ -509,6 +509,11 @@ async function deleteProduct(id) {
         if (response.ok) {
             showToast('Product deleted successfully!', 'success');
             loadProducts();
+            
+            // Si el carrito está abierto o activo, lo recargamos para que el producto desaparezca al instante
+            if (currentCartId) {
+                loadCart();
+            }
         } else if (response.status === 401) {
             logout();
         } else {
@@ -805,7 +810,7 @@ function renderCart() {
     cartSummary.classList.remove('hidden');
 
     cartItemsContainer.innerHTML = currentCart.items.map(item => {
-        const product = globalProducts.find(p => p.id === item.productId);
+        const product = globalProducts.find(p => p.id == item.productId);
         const name = product ? escapeHtml(product.name) : `Product #${item.productId}`;
         return `
         <div class="cart-item">
@@ -908,7 +913,7 @@ function renderCheckoutStep1() {
     }
 
     checkoutItems.innerHTML = currentCart.items.map(item => {
-        const product = globalProducts.find(p => p.id === item.productId);
+        const product = globalProducts.find(p => p.id == item.productId);
         const name = product ? escapeHtml(product.name) : `Product #${item.productId}`;
         return `
         <div class="checkout-item">

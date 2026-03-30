@@ -110,7 +110,7 @@ namespace CartService.Controllers
                         int currentQty = existingItem?.Quantity ?? 0;
                         if (currentQty + request.Quantity > inventory.AvailableStock)
                         {
-                            return BadRequest(new { error = $"Cannot add item. Only {inventory.AvailableStock} items available in stock." });
+                            return BadRequest(new { error = $"No se puede exceder del stock disponible. Solo quedan {inventory.AvailableStock} unidades." });
                         }
                     }
                 }
@@ -181,7 +181,7 @@ namespace CartService.Controllers
                             var inventory = await availabilityResponse.Content.ReadFromJsonAsync<AvailabilityResponse>();
                             if (inventory != null && request.Quantity > inventory.AvailableStock)
                             {
-                                return BadRequest(new { error = $"Cannot increase quantity. Only {inventory.AvailableStock} items available in stock." });
+                                return BadRequest(new { error = $"No se puede exceder del stock disponible. Solo quedan {inventory.AvailableStock} unidades." });
                             }
                         }
                     }
@@ -318,8 +318,8 @@ namespace CartService.Controllers
                             {
                                 return BadRequest(new CheckoutFailureResponse
                                 {
-                                    Error = "Insufficient stock",
-                                    Reason = $"Cannot checkout. Only {inventory.AvailableStock} items available for Product {item.ProductId}."
+                                    Error = "Stock insuficiente",
+                                    Reason = $"No se puede proceder. Solo quedan {inventory.AvailableStock} unidades del producto {item.ProductId}."
                                 });
                             }
                         }
