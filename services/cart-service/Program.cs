@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using CartService.Data;
 using CartService.Extensions;
-using Polly;
-using Polly.Extensions.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,12 +50,7 @@ builder.Services.AddDbContext<CartDbContext>(options =>
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
-builder.Services.AddHttpClient()
-    .AddTransientHttpErrorPolicy(policyBuilder => 
-        policyBuilder.WaitAndRetryAsync(
-            3, 
-            retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
-        ));
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
