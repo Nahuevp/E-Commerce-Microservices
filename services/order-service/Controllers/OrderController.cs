@@ -25,11 +25,20 @@ namespace OrderService.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
+        [Authorize]
         public async Task<IActionResult> GetOrders([FromQuery] int limit = 10)
         {
-            // Traemos solo las últimas (limit) órdenes, ordenadas descendentemente por fecha
+            // Get user ID from JWT claims
+            var userIdClaim = User.FindFirst("userId") ?? User.FindFirst("sub");
+            if (userIdClaim == null)
+                return Unauthorized("User not authenticated");
+
+            if (!int.TryParse(userIdClaim.Value, out int userId))
+                userId = 1; // Fallback
+
+            // Traemos solo las órdenes del usuario actual, ordenadas descendentemente
             var orders = await _context.Orders
+                .Where(o => o.UserId == userId)
                 .OrderByDescending(o => o.CreatedAt)
                 .Take(limit)
                 .ToListAsync();
@@ -38,11 +47,24 @@ namespace OrderService.Controllers
         }
 
         [HttpGet("{id}")]
-        [AllowAnonymous]
+        [Authorize]
         public async Task<IActionResult> GetOrder(int id)
         {
+            // Get user ID from JWT claims
+            var userIdClaim = User.FindFirst("userId") ?? User.FindFirst("sub");
+            if (userIdClaim == null)
+                return Unauthorized("User not authenticated");
+
+            if (!int.TryParse(userIdClaim.Value, out int userId))
+                userId = 1;
+
             var order = await _context.Orders.FindAsync(id);
             if (order == null) return NotFound("Order not found");
+            
+            // Verify the order belongs to the current user
+            if (order.UserId != userId)
+                return NotFound("Order not found");
+
             return Ok(order);
         }
 
@@ -77,8 +99,20 @@ namespace OrderService.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteOrder(int id)
         {
+            // Get user ID from JWT claims
+            var userIdClaim = User.FindFirst("userId") ?? User.FindFirst("sub");
+            if (userIdClaim == null)
+                return Unauthorized("User not authenticated");
+
+            if (!int.TryParse(userIdClaim.Value, out int userId))
+                userId = 1;
+
             var order = await _context.Orders.FindAsync(id);
             if (order == null) return NotFound("Order not found");
+
+            // Verify the order belongs to the current user
+            if (order.UserId != userId)
+                return NotFound("Order not found");
 
             if (order.Status?.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) == true)
                 return BadRequest("Order is already cancelled");
