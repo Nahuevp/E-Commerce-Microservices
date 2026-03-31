@@ -95,11 +95,16 @@ namespace CartService.Controllers
             // Check if item already exists in cart
             var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == request.ProductId);
             
-            // Validation step: Check available inventory from Inventory Service
+            // Validation step: Check available inventory
+            int currentQty = existingItem?.Quantity ?? 0;
+            int maxAllowed = 0;
+            
             try
             {
                 var httpClient = _httpClientFactory.CreateClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(10); // Aumentado a 10s para contenedores chicos
+                httpClient.Timeout = TimeSpan.FromSeconds(10);
+                
+                // Intentar primero del Inventory Service
                 var availabilityResponse = await httpClient.GetAsync($"{InventoryServiceUrl}/api/inventory/{request.ProductId}/availability");
                 
                 if (availabilityResponse.IsSuccessStatusCode)
@@ -107,21 +112,46 @@ namespace CartService.Controllers
                     var inventory = await availabilityResponse.Content.ReadFromJsonAsync<AvailabilityResponse>();
                     if (inventory != null)
                     {
-                        int currentQty = existingItem?.Quantity ?? 0;
-                        if (currentQty + request.Quantity > inventory.AvailableStock)
-                        {
-                            return BadRequest(new { error = $"No se puede exceder del stock disponible. Solo quedan {inventory.AvailableStock} unidades." });
-                        }
+                        maxAllowed = inventory.AvailableStock;
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"Could not verify inventory: {ex.Message}");
-                // Si el inventario no responde, NO procedemos por resiliencia. Bloqueamos.
-                // Es preferible fallar que vender stock que no tenemos.
-                return StatusCode(503, new { error = "Inventory service is unavailable to verify stock. Please try again in a moment." });
+                _logger.LogWarning($"Could not verify inventory from Inventory Service: {ex.Message}");
             }
+            
+            // Si el inventory service tiene 0 o no respondió, usar Product Service como fuente de verdad
+            if (maxAllowed == 0)
+            {
+                try
+                {
+                    var httpClient2 = _httpClientFactory.CreateClient();
+                    httpClient2.Timeout = TimeSpan.FromSeconds(5);
+                    var productResponse = await httpClient2.GetAsync($"http://127.0.0.1:8002/products/{request.ProductId}");
+                    if (productResponse.IsSuccessStatusCode)
+                    {
+                        var productJson = await productResponse.Content.ReadAsStringAsync();
+                        // Extraer stock del JSON
+                        using var doc = System.Text.Json.JsonDocument.Parse(productJson);
+                        if (doc.RootElement.TryGetProperty("stock", out var stockProp) && stockProp.TryGetInt32(out int stock))
+                        {
+                            maxAllowed = stock;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Could not verify stock from Product Service: {ex.Message}");
+                }
+            }
+            
+            // Validar contra el stock disponible
+            if (maxAllowed > 0 && currentQty + request.Quantity > maxAllowed)
+            {
+                return BadRequest(new { error = $"No se puede exceder del stock disponible. Solo quedan {maxAllowed} unidades." });
+            }
+            // Si maxAllowed es 0, permitimos agregar (el admin edito stock y no se sincronizo)
 
             if (existingItem != null)
             {
@@ -167,9 +197,12 @@ namespace CartService.Controllers
 
             if (request.Quantity > 0)
             {
-                // Validation step: Check available inventory before updating to a higher quantity
+                // Validation: solo validar si está aumentando cantidad
                 if (request.Quantity > cartItem.Quantity)
                 {
+                    int maxAllowed = 0;
+                    
+                    // Intentar del Inventory Service
                     try
                     {
                         var httpClient = _httpClientFactory.CreateClient();
@@ -179,17 +212,41 @@ namespace CartService.Controllers
                         if (availabilityResponse.IsSuccessStatusCode)
                         {
                             var inventory = await availabilityResponse.Content.ReadFromJsonAsync<AvailabilityResponse>();
-                            if (inventory != null && request.Quantity > inventory.AvailableStock)
+                            if (inventory != null)
                             {
-                                return BadRequest(new { error = $"No se puede exceder del stock disponible. Solo quedan {inventory.AvailableStock} unidades." });
+                                maxAllowed = inventory.AvailableStock;
                             }
                         }
                     }
-                    catch (Exception ex)
+                    catch { }
+                    
+                    // Si inventory tiene 0, usar Product Service
+                    if (maxAllowed == 0)
                     {
-                        _logger.LogWarning($"Could not verify inventory: {ex.Message}");
-                        return StatusCode(503, new { error = "Inventory service is unavailable. Please try again in a moment." });
+                        try
+                        {
+                            var httpClient2 = _httpClientFactory.CreateClient();
+                            httpClient2.Timeout = TimeSpan.FromSeconds(5);
+                            var productResponse = await httpClient2.GetAsync($"http://127.0.0.1:8002/products/{cartItem.ProductId}");
+                            if (productResponse.IsSuccessStatusCode)
+                            {
+                                var productJson = await productResponse.Content.ReadAsStringAsync();
+                                using var doc = System.Text.Json.JsonDocument.Parse(productJson);
+                                if (doc.RootElement.TryGetProperty("stock", out var stockProp) && stockProp.TryGetInt32(out int stock))
+                                {
+                                    maxAllowed = stock;
+                                }
+                            }
+                        }
+                        catch { }
                     }
+                    
+                    // Validar
+                    if (maxAllowed > 0 && request.Quantity > maxAllowed)
+                    {
+                        return BadRequest(new { error = $"No se puede exceder del stock disponible. Solo quedan {maxAllowed} unidades." });
+                    }
+                    // Si maxAllowed es 0, permitir (el admin editó stock)
                 }
 
                 cartItem.Quantity = request.Quantity;
