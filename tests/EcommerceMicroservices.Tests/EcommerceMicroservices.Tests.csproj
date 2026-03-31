@@ -28,6 +28,9 @@
     <ProjectReference Include="..\..\services\payment-service\PaymentService.csproj" />
     <ProjectReference Include="..\..\services\inventory-service\InventoryService.csproj" />
     <ProjectReference Include="..\..\services\auth-service\AuthService.csproj" />
+    <ProjectReference Include="..\..\services\cart-service\CartService.csproj" />
+    <ProjectReference Include="..\..\services\order-service\OrderService.csproj" />
+    <ProjectReference Include="..\..\services\product-service\ProductService.csproj" />
   </ItemGroup>
 
 </Project>

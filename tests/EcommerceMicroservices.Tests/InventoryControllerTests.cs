@@ -25,7 +25,8 @@ public class InventoryControllerTests
     private InventoryController CreateController(InventoryDbContext context)
     {
         var loggerMock = new Mock<ILogger<InventoryController>>();
-        return new InventoryController(context, loggerMock.Object);
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
+        return new InventoryController(context, loggerMock.Object, httpClientFactoryMock.Object);
     }
 
     [Fact]

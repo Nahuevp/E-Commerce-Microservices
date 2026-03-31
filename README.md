@@ -118,15 +118,32 @@ CREATE DATABASE "NotificationDb";
 CREATE DATABASE "InventoryDb";
 
 # 3. Configurar connection strings en appsettings.json de cada servicio
+#Cada servicio tiene su appsettings.json con ConnectionStrings:DefaultConnection
+#Formato: "Host=localhost;Port=5432;Database=NombreDb;Username=postgres;Password=tu_password"
 
 # 4. Ejecutar servicios (en terminals separadas)
+# Puerto 5001 - Auth
 cd services/auth-service && dotnet run
+
+# Puerto 5002 - Products  
 cd services/product-service && dotnet run
+
+# Puerto 5003 - Orders
 cd services/order-service && dotnet run
+
+# Puerto 5004 - Cart
 cd services/cart-service && dotnet run
+
+# Puerto 5005 - Payments
 cd services/payment-service && dotnet run
+
+# Puerto 5006 - Notifications
 cd services/notification-service && dotnet run
+
+# Puerto 5007 - Inventory
 cd services/inventory-service && dotnet run
+
+# Puerto 5000 - API Gateway
 cd api-gateway && dotnet run
 
 # 5. Abrir el cliente
@@ -134,21 +151,110 @@ cd api-gateway && dotnet run
 # O http://localhost:5000 (si accedés directo al gateway)
 ```
 
-### Con Docker Compose (Recomendado)
+### Quick Start (VS Code / Terminal)
 
 ```bash
-# Levantar todos los servicios
+# Abrir en VS Code
+code .
+
+# Restore y build todo
+dotnet restore
+dotnet build
+
+# Run tests
+dotnet test
+
+# Run api-gateway (punto de entrada)
+cd api-gateway && dotnet run
+```
+
+---
+
+## Cómo Ejecutar el Proyecto Local
+
+### Opción 1: Con Docker Compose (Recomendado)
+
+```bash
+# 1. Desde la raíz del proyecto
+cd E-Commerce-Microservices
+
+# 2. Levantar todos los servicios (incluye PostgreSQL, nginx, gateway y microservicios)
 docker-compose up -d
 
-# Ver logs
+# 3. Esperar ~30 segundos a que inicialicen las bases de datos
+
+# 4. Abrir navegador
+# Cliente: http://localhost
+# API Gateway: http://localhost:5000
+
+# Para ver logs
 docker-compose logs -f
 
-# Bajar todo
+# Para detener
 docker-compose down
-
-# Rebuild si hay cambios
-docker-compose up -d --build
 ```
+
+### Opción 2: Sin Docker (Solo servicios .NET)
+
+Requiere tener PostgreSQL instalado y corriendo en el puerto 5432.
+
+```bash
+# 1. Crear las 7 bases de datos en PostgreSQL
+# Ejecutar en pgAdmin o psql:
+CREATE DATABASE "AuthDb";
+CREATE DATABASE "ProductDb";
+CREATE DATABASE "OrderDb";
+CREATE DATABASE "CartDb";
+CREATE DATABASE "PaymentDb";
+CREATE DATABASE "NotificationDb";
+CREATE DATABASE "InventoryDb";
+
+# 2. Configurar ConnectionStrings
+# Editar appsettings.json de cada servicio:
+# "ConnectionStrings": {"DefaultConnection": "Host=localhost;Port=5432;Database=NombreDb;Username=postgres;Password=tu_password"}
+
+# 3. Ejecutar servicios (cada uno en terminal separada)
+# Puerto 5001
+dotnet run --project services/auth-service
+
+# Puerto 5002
+dotnet run --project services/product-service
+
+# Puerto 5003
+dotnet run --project services/order-service
+
+# Puerto 5004
+dotnet run --project services/cart-service
+
+# Puerto 5005
+dotnet run --project services/payment-service
+
+# Puerto 5006
+dotnet run --project services/notification-service
+
+# Puerto 5007
+dotnet run --project services/inventory-service
+
+# Puerto 5000 (API Gateway)
+dotnet run --project api-gateway
+
+# 4. Abrir http://localhost:5000
+```
+
+### Puertos Activos
+
+| Servicio | Puerto |
+|----------|--------|
+| nginx | 80 |
+| API Gateway | 5000 |
+| Auth | 5001 |
+| Products | 5002 |
+| Orders | 5003 |
+| Cart | 5004 |
+| Payments | 5005 |
+| Notifications | 5006 |
+| Inventory | 5007 |
+| PostgreSQL | 5432 |
 
 ---
 
@@ -162,7 +268,56 @@ dotnet test
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-**Cobertura actual**: Tests para PaymentController, InventoryController y AuthController.
+**Cobertura actual**: Tests para PaymentController, InventoryController, AuthController y CartController (~32 tests).
+
+---
+
+## Decisiones Técnicas
+
+### ¿Por qué microservicios?
+
+- **Escalabilidad independiente**: Cada servicio puede escalar según su carga (payment-service necesita más recursos durante checkout)
+- **Separación de responsabilidades**: Aislamiento de lógica de negocio
+- **Tecnologías apropiadas**: Elegir la herramienta correcta para cada problema
+
+### ¿Por qué YARP como API Gateway?
+
+- **Rendimiento**: YARP está optimizado para alta throughput
+- **Flexibilidad**: Configuración via código, no XML
+- **Integración native con ASP.NET**: Mismo modelo de middleware
+- **Alternativa a Ocelot/Kong**: Más control, menos abstracciones
+
+### ¿Por qué PostgreSQL?
+
+- **Confiabilidad**: Robusto y maduro para producción
+- **JSON support**: Flexible para DTOs complejos
+- **Conexión por servicio**: Aislamiento de fallos entre bases de datos
+- **Docker compatible**: Imagen oficial ligera (postgres:15-alpine)
+
+### Patrón de Comunicación
+
+- **Síncrona (HTTP)**: Entre gateway y servicios internos
+- **No es ideal pero funciona**: En un sistema real usaría message queues (RabbitMQ/Kafka)
+- **Futura mejora**: Implementar Event-Driven Architecture con publish/subscribe
+
+### Gestión de Transacciones
+
+El checkout saga implementa:
+1. Validar stock disponible
+2. Procesar pago
+3. Crear orden
+4. Confirmar reserva de inventario
+5. Notificar al usuario
+
+**Rollback simplificado**: Si el pago falla, no se crea orden (no hay compensación completa todavía - mejora futura)
+
+---
+
+## Demo
+
+**Live URL**: https://ecommerce-microservices-ow4d.onrender.com
+
+> ⚠️ **Nota**: El servicio gratuito de Render entra en modo sleep después de 15 minutos de inactividad. El primer request puede tardar ~30 segundos en despertar.
 
 ---
 
