@@ -51,11 +51,31 @@ namespace ProductService.Controllers
             var product = await _context.Products.FindAsync(id);
             if (product == null) return NotFound("Product not found");
 
+            var stockChanged = product.Stock != productUpdated.Stock;
+
             product.Name = productUpdated.Name;
             product.Price = productUpdated.Price;
             product.Stock = productUpdated.Stock;
 
             await _context.SaveChangesAsync();
+
+            // Si cambió el stock, sincronizar con Inventory Service
+            if (stockChanged)
+            {
+                try
+                {
+                    var client = _httpClientFactory.CreateClient();
+                    client.Timeout = TimeSpan.FromSeconds(5);
+                    // Actualizar el inventario directamente con el nuevo stock total
+                    await client.PutAsJsonAsync($"http://127.0.0.1:8007/api/inventory/{id}/sync", 
+                        new { stock = productUpdated.Stock });
+                }
+                catch
+                {
+                    // Silencioso - si falla, el inventario se sincroniza en checkout
+                }
+            }
+
             return Ok(product);
         }
 

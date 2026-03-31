@@ -538,6 +538,46 @@ namespace InventoryService.Controllers
 
             return Ok(new { ProductId = request.ProductId, AvailableStock = inventory.AvailableStock, TotalStock = inventory.TotalStock });
         }
+        
+        /// <summary>
+        /// Sync inventory with product stock (called when admin edits product stock)
+        /// PUT /api/inventory/{productId}/sync
+        /// </summary>
+        [HttpPut("{productId}/sync")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SyncInventory(int productId, [FromBody] SyncInventoryRequest request)
+        {
+            var inventory = await _context.Inventories.FirstOrDefaultAsync(i => i.ProductId == productId);
+            
+            if (inventory == null)
+            {
+                // Create new inventory entry
+                inventory = new Inventory
+                {
+                    ProductId = productId,
+                    TotalStock = request.Stock,
+                    AvailableStock = request.Stock,
+                    ReservedStock = 0
+                };
+                _context.Inventories.Add(inventory);
+            }
+            else
+            {
+                // Update existing inventory - set all stocks to the new value
+                inventory.TotalStock = request.Stock;
+                inventory.AvailableStock = request.Stock;
+                // Keep reserved stock as is (it represents pending orders)
+                inventory.AvailableStock -= inventory.ReservedStock;
+                if (inventory.AvailableStock < 0) inventory.AvailableStock = 0;
+            }
+
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Synced inventory for product {ProductId}: Total={Total}, Available={Available}", 
+                productId, inventory.TotalStock, inventory.AvailableStock);
+
+            return Ok(new { ProductId = productId, TotalStock = inventory.TotalStock, AvailableStock = inventory.AvailableStock });
+        }
     }
 
     /// <summary>
@@ -554,5 +594,10 @@ namespace InventoryService.Controllers
         public int? AvailableStock { get; set; }
         public int? ReservedStock { get; set; }
         public int? TotalStock { get; set; }
+    }
+    
+    public class SyncInventoryRequest
+    {
+        public int Stock { get; set; }
     }
 }
