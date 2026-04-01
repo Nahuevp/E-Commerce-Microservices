@@ -1,206 +1,62 @@
 # E-Commerce Microservices
 
-Una aplicación de e-commerce full-stack construida con arquitectura de microservicios en .NET 10, usando PostgreSQL, JWT Authentication, API Gateway con YARP, y nginx como reverse proxy.
+Aplicación de e-commerce con arquitectura de microservicios en .NET 10, PostgreSQL, JWT Auth, API Gateway con YARP y frontend vanilla con Tailwind CSS.
 
-![License](https://img.shields.io/badge/License-MIT-blue.svg)
-![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)
-![Build](https://img.shields.io/badge/Build-Local-success.svg)
+**Live demo**: https://ecommerce-microservices-ow4d.onrender.com
+
+> Render free tier entra en sleep tras 15 min de inactividad. El primer request puede tardar ~30s.
 
 ---
 
 ## Arquitectura
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         USUARIO (Browser)                        │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │ :80
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        nginx (Reverse Proxy)                     │
-│  • Sirve archivos estáticos (HTML/CSS/JS)                        │
-│  • Forward /api/* al API Gateway                                 │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    API Gateway (YARP) :5000                       │
-│                  Puerta de entrada unificada                     │
-└─────┬───────┬───────┬───────┬───────┬───────┬───────┬─────────┘
-      │       │       │       │       │       │       │
-      ▼       ▼       ▼       ▼       ▼       ▼       ▼
-┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
-│  Auth   │ │Product  │ │ Order  │ │  Cart   │ │Payment │ │Inventory│
-│ :5001   │ │ :5002   │ │ :5003  │ │ :5004   │ │ :5005  │ │ :5007   │
-└────┬────┘ └────┬────┘ └───┬────┘ └────┬────┘ └───┬────┘ └───┬────┘
-     │           │          │           │          │          │
-     └───────────┴──────────┴──────────┴──────────┴──────────┘
-                               │
-                               ▼
-                    ┌───────────────────┐
-                    │   PostgreSQL :5432 │
-                    │  (7 bases de datos) │
-                    └───────────────────┘
+Browser → API Gateway (YARP) → Auth / Products / Orders / Cart / Payment / Inventory / Notification
+                                    ↓
+                              PostgreSQL (7 databases)
 ```
 
----
-
-## Servicios
-
-| Servicio | Puerto | Descripción | Base de datos |
-|----------|--------|-------------|---------------|
-| nginx | 80 | Reverse proxy + archivos estáticos | - |
-| api-gateway | 5000 | Puerta de entrada, routing con YARP | - |
-| auth-service | 5001 | Registro y autenticación JWT (BCrypt) | AuthDb |
-| product-service | 5002 | CRUD de productos | ProductDb |
-| order-service | 5003 | Gestión de órdenes | OrderDb |
-| cart-service | 5004 | Carrito de compras | CartDb |
-| payment-service | 5005 | Procesamiento de pagos | PaymentDb |
-| notification-service | 5006 | Sistema de notificaciones | NotificationDb |
-| inventory-service | 5007 | Control de stock y reservas | InventoryDb |
+| Servicio | Puerto | Descripción |
+|----------|--------|-------------|
+| api-gateway | 5000 | YARP reverse proxy |
+| auth-service | 5001 | Registro, login, JWT |
+| product-service | 5002 | CRUD productos |
+| order-service | 5003 | Gestión de órdenes |
+| cart-service | 5004 | Carrito de compras |
+| payment-service | 5005 | Procesamiento de pagos (simulado) |
+| inventory-service | 5007 | Stock y reservas |
+| notification-service | 5006 | Notificaciones |
 
 ---
 
-## Tecnologías
+## Stack
 
-| Categoría | Tecnología |
-|-----------|------------|
-| **Backend** | .NET 10, ASP.NET Core Minimal APIs |
-| **Base de datos** | PostgreSQL 15 (via Npgsql + EF Core) |
-| **API Gateway** | YARP (Yet Another Reverse Proxy) |
-| **Reverse Proxy** | nginx (Alpine) |
-| **Frontend** | HTML5, Tailwind CSS (CDN), JavaScript vanilla |
-| **Auth** | JWT Bearer Tokens, BCrypt hashing |
-| **Testing** | xUnit, Moq, EntityFrameworkCore InMemory |
-| **Contenedores** | Docker, Docker Compose |
+- **Backend**: .NET 10, ASP.NET Core, EF Core + Npgsql
+- **Database**: PostgreSQL 15
+- **Gateway**: YARP
+- **Frontend**: HTML5, Tailwind CSS (CDN), JavaScript vanilla
+- **Auth**: JWT Bearer Tokens, BCrypt
+- **Testing**: xUnit, Moq, EF Core InMemory
+- **Containers**: Docker, Docker Compose
 
 ---
 
-## Características Principales
+## Quick Start
 
-- ✅ Autenticación JWT con BCrypt
-- ✅ CRUD completo de productos
-- ✅ Sistema de carrito de compras
-- ✅ Procesamiento de pagos (simulación)
-- ✅ Control de inventario con reservas
-- ✅ Notificaciones del sistema
-- ✅ Health checks por servicio
-- ✅ Tests unitarios
-- ✅ Docker Compose para desarrollo
-- ✅ API Gateway centralizado (YARP)
-- ✅ nginx como reverse proxy
-
----
-
-## Getting Started
-
-### Requisitos Previos
-
-- .NET 10 SDK
-- Docker Desktop (para PostgreSQL)
-- Git
-
-### Instalación Local (sin Docker)
+### Docker Compose (recomendado)
 
 ```bash
-# 1. Clonar el repositorio
-git clone <repo-url>
-cd E-Commerce-Microservices
-
-# 2. Crear bases de datos en PostgreSQL
-# Ejecutar en psql o PgAdmin:
-CREATE DATABASE "AuthDb";
-CREATE DATABASE "ProductDb";
-CREATE DATABASE "OrderDb";
-CREATE DATABASE "CartDb";
-CREATE DATABASE "PaymentDb";
-CREATE DATABASE "NotificationDb";
-CREATE DATABASE "InventoryDb";
-
-# 3. Configurar connection strings en appsettings.json de cada servicio
-#Cada servicio tiene su appsettings.json con ConnectionStrings:DefaultConnection
-#Formato: "Host=localhost;Port=5432;Database=NombreDb;Username=postgres;Password=tu_password"
-
-# 4. Ejecutar servicios (en terminals separadas)
-# Puerto 5001 - Auth
-cd services/auth-service && dotnet run
-
-# Puerto 5002 - Products  
-cd services/product-service && dotnet run
-
-# Puerto 5003 - Orders
-cd services/order-service && dotnet run
-
-# Puerto 5004 - Cart
-cd services/cart-service && dotnet run
-
-# Puerto 5005 - Payments
-cd services/payment-service && dotnet run
-
-# Puerto 5006 - Notifications
-cd services/notification-service && dotnet run
-
-# Puerto 5007 - Inventory
-cd services/inventory-service && dotnet run
-
-# Puerto 5000 - API Gateway
-cd api-gateway && dotnet run
-
-# 5. Abrir el cliente
-# Ir a http://localhost/client/index.html (si nginx está corriendo)
-# O http://localhost:5000 (si accedés directo al gateway)
-```
-
-### Quick Start (VS Code / Terminal)
-
-```bash
-# Abrir en VS Code
-code .
-
-# Restore y build todo
-dotnet restore
-dotnet build
-
-# Run tests
-dotnet test
-
-# Run api-gateway (punto de entrada)
-cd api-gateway && dotnet run
-```
-
----
-
-## Cómo Ejecutar el Proyecto Local
-
-### Opción 1: Con Docker Compose (Recomendado)
-
-```bash
-# 1. Desde la raíz del proyecto
-cd E-Commerce-Microservices
-
-# 2. Levantar todos los servicios (incluye PostgreSQL, nginx, gateway y microservicios)
 docker-compose up -d
-
-# 3. Esperar ~30 segundos a que inicialicen las bases de datos
-
-# 4. Abrir navegador
-# Cliente: http://localhost
-# API Gateway: http://localhost:5000
-
-# Para ver logs
-docker-compose logs -f
-
-# Para detener
-docker-compose down
+# Esperar ~30s a que inicialicen las bases de datos
+# Abrir http://localhost
 ```
 
-### Opción 2: Sin Docker (Solo servicios .NET)
+### Local (sin Docker)
 
-Requiere tener PostgreSQL instalado y corriendo en el puerto 5432.
+Requiere PostgreSQL corriendo en puerto 5432.
 
 ```bash
-# 1. Crear las 7 bases de datos en PostgreSQL
-# Ejecutar en pgAdmin o psql:
+# 1. Crear las 7 bases de datos
 CREATE DATABASE "AuthDb";
 CREATE DATABASE "ProductDb";
 CREATE DATABASE "OrderDb";
@@ -209,246 +65,53 @@ CREATE DATABASE "PaymentDb";
 CREATE DATABASE "NotificationDb";
 CREATE DATABASE "InventoryDb";
 
-# 2. Configurar ConnectionStrings
-# Editar appsettings.json de cada servicio:
-# "ConnectionStrings": {"DefaultConnection": "Host=localhost;Port=5432;Database=NombreDb;Username=postgres;Password=tu_password"}
+# 2. Configurar ConnectionStrings en appsettings.json de cada servicio
+# "ConnectionStrings": { "DefaultConnection": "Host=localhost;Port=5432;Database=AuthDb;Username=postgres;Password=tu_password" }
 
-# 3. Ejecutar servicios (cada uno en terminal separada)
-# Puerto 5001
-dotnet run --project services/auth-service
-
-# Puerto 5002
-dotnet run --project services/product-service
-
-# Puerto 5003
-dotnet run --project services/order-service
-
-# Puerto 5004
-dotnet run --project services/cart-service
-
-# Puerto 5005
-dotnet run --project services/payment-service
-
-# Puerto 5006
-dotnet run --project services/notification-service
-
-# Puerto 5007
-dotnet run --project services/inventory-service
-
-# Puerto 5000 (API Gateway)
-dotnet run --project api-gateway
-
-# 4. Abrir http://localhost:5000
+# 3. Ejecutar cada servicio en terminal separada
+dotnet run --project services/auth-service --urls http://localhost:5001
+dotnet run --project services/product-service --urls http://localhost:5002
+dotnet run --project services/order-service --urls http://localhost:5003
+dotnet run --project services/cart-service --urls http://localhost:5004
+dotnet run --project services/payment-service --urls http://localhost:5005
+dotnet run --project services/notification-service --urls http://localhost:5006
+dotnet run --project services/inventory-service --urls http://localhost:5007
+dotnet run --project api-gateway --urls http://localhost:5000
 ```
 
-### Puertos Activos
-
-| Servicio | Puerto |
-|----------|--------|
-| nginx | 80 |
-| API Gateway | 5000 |
-| Auth | 5001 |
-| Products | 5002 |
-| Orders | 5003 |
-| Cart | 5004 |
-| Payments | 5005 |
-| Notifications | 5006 |
-| Inventory | 5007 |
-| PostgreSQL | 5432 |
-
----
-
-## Tests
+### Tests
 
 ```bash
-cd tests/EcommerceMicroservices.Tests
 dotnet test
-
-# Con coverage
-dotnet test --collect:"XPlat Code Coverage"
 ```
 
-**Cobertura actual**: Tests para PaymentController, InventoryController, AuthController y CartController (~32 tests).
-
 ---
 
-## Decisiones Técnicas
-
-### ¿Por qué microservicios?
-
-- **Escalabilidad independiente**: Cada servicio puede escalar según su carga (payment-service necesita más recursos durante checkout)
-- **Separación de responsabilidades**: Aislamiento de lógica de negocio
-- **Tecnologías apropiadas**: Elegir la herramienta correcta para cada problema
-
-### ¿Por qué YARP como API Gateway?
-
-- **Rendimiento**: YARP está optimizado para alta throughput
-- **Flexibilidad**: Configuración via código, no XML
-- **Integración native con ASP.NET**: Mismo modelo de middleware
-- **Alternativa a Ocelot/Kong**: Más control, menos abstracciones
-
-### ¿Por qué PostgreSQL?
-
-- **Confiabilidad**: Robusto y maduro para producción
-- **JSON support**: Flexible para DTOs complejos
-- **Conexión por servicio**: Aislamiento de fallos entre bases de datos
-- **Docker compatible**: Imagen oficial ligera (postgres:15-alpine)
-
-### Patrón de Comunicación
-
-- **Síncrona (HTTP)**: Entre gateway y servicios internos
-- **No es ideal pero funciona**: En un sistema real usaría message queues (RabbitMQ/Kafka)
-- **Futura mejora**: Implementar Event-Driven Architecture con publish/subscribe
-
-### Gestión de Transacciones
-
-El checkout saga implementa:
-1. Validar stock disponible
-2. Procesar pago
-3. Crear orden
-4. Confirmar reserva de inventario
-5. Notificar al usuario
-
-**Rollback simplificado**: Si el pago falla, no se crea orden (no hay compensación completa todavía - mejora futura)
-
----
-
-## Demo
-
-**Live URL**: https://ecommerce-microservices-ow4d.onrender.com
-
-> ⚠️ **Nota**: El servicio gratuito de Render entra en modo sleep después de 15 minutos de inactividad. El primer request puede tardar ~30 segundos en despertar.
-
----
-
-## API Endpoints
-
-### Auth Service (puerto 5001)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/auth/register` | Registrar usuario nuevo |
-| `POST` | `/auth/login` | Login (retorna JWT) |
-| `GET` | `/auth/users` | Listar usuarios (admin) |
-
-### Product Service (puerto 5002)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/products` | Listar productos |
-| `GET` | `/products/{id}` | Ver producto |
-| `POST` | `/products` | Crear producto (auth) |
-| `PUT` | `/products/{id}` | Editar producto (auth) |
-| `DELETE` | `/products/{id}` | Eliminar producto (auth) |
-| `GET` | `/products/health` | Health check |
-
-### Order Service (puerto 5003)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/orders` | Listar órdenes |
-| `GET` | `/orders/{id}` | Ver orden |
-| `POST` | `/orders` | Crear orden (auth) |
-| `DELETE` | `/orders/{id}` | Cancelar orden (auth) |
-
-### Cart Service (puerto 5004)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/carts/{userId}` | Obtener carrito |
-| `POST` | `/carts` | Agregar item al carrito (auth) |
-| `POST` | `/carts/{id}/checkout` | Finalizar compra (auth) |
-| `PUT` | `/carts/{cartId}/items/{itemId}` | Actualizar cantidad (auth) |
-| `DELETE` | `/carts/{cartId}/items/{itemId}` | Remover item (auth) |
-
-### Payment Service (puerto 5005)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/api/payments` | Procesar pago (auth) |
-| `GET` | `/api/payments/{id}` | Ver estado de pago (auth) |
-| `GET` | `/api/payments` | Listar pagos (auth) |
-
-> **Nota**: Tarjetas que empiezan con "4000" son declinadas (simulación).
-
-### Inventory Service (puerto 5007)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/api/inventory/{productId}/availability` | Ver stock disponible |
-| `POST` | `/api/inventory/reserve` | Reservar stock (auth) |
-| `DELETE` | `/api/inventory/reserve/{id}` | Liberar reserva (auth) |
-| `POST` | `/api/inventory/confirm/{id}` | Confirmar reserva (auth) |
-
-### Notification Service (puerto 5006)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/notifications` | Listar notificaciones |
-| `POST` | `/notifications` | Crear notificación |
-
----
-
-## Environment Variables
-
-Cada servicio acepta estas variables de entorno:
-
-| Variable | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `ConnectionStrings__DefaultConnection` | Connection string de PostgreSQL | `Host=postgres;Port=5432;Database=AuthDb;...` |
-| `Jwt__Key` | Clave secreta para JWT (min 32 bytes) | `super_secret_key_...` |
-| `ASPNETCORE_ENVIRONMENT` | Entorno (Development/Production) | `Development` |
-
----
-
-## Seguridad
-
-- Contraseñas hasheadas con BCrypt
-- Tokens JWT con expiración de 7 días
-- Rate limiting (para implementar)
-- Validación de inputs en todos los endpoints
-- Sanitización de queries (EF Core previene SQL injection)
-- Cards nunca se almacenan completas (masking automático)
-
----
-
-## Roadmap / Mejoras Futuras
-
-- [ ] Implementar event-driven communication (RabbitMQ/Kafka)
-- [ ] Agregar rate limiting por usuario
-- [ ] Tests de integración con PostgreSQL real
-- [ ] CI/CD con GitHub Actions
-- [ ] Kubernetes deployment
-- [ ] Implementar Refresh Tokens
-- [ ] Agregar logging centralizado (ELK/Seq)
-- [ ] Cache con Redis
-- [ ] WebSocket para notificaciones real-time
-
----
-
-## Estructura del Proyecto
+## Estructura
 
 ```
 E-Commerce-Microservices/
 ├── api-gateway/           # YARP API Gateway
 ├── client/                # Frontend (HTML/CSS/JS)
-├── nginx/                 # Configuración nginx
-├── services/              # Microservicios
-│   ├── auth-service/      # Autenticación
-│   ├── cart-service/      # Carrito
-│   ├── inventory-service/ # Inventario
-│   ├── notification-service/ # Notificaciones
-│   ├── order-service/     # Órdenes
-│   ├── payment-service/   # Pagos
-│   └── product-service/   # Productos
+├── docker/                # Scripts de deploy
+├── services/              # 7 microservicios
 ├── tests/                 # Tests unitarios
-│   └── EcommerceMicroservices.Tests/
-├── docker-compose.yml     # Orquestación Docker
-└── README.md
+├── docker-compose.yml
+└── Dockerfile.all-in-one  # Build para Render
 ```
 
 ---
 
-## License
+## Deploy
 
-MIT License - ver archivo LICENSE.
+### Render (all-in-one container)
+
+El `Dockerfile.all-in-one` compila y ejecuta todos los servicios en un solo contenedor Alpine. El gateway sirve los archivos estáticos del frontend directamente.
+
+Variables de entorno necesarias:
+- `DATABASE_URL` — URL de PostgreSQL (formato `postgres://user:pass@host:port/db`)
+- `JWT_KEY` — Clave secreta para JWT (mínimo 32 bytes)
+
+---
+
+MIT License
