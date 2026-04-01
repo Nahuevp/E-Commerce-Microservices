@@ -1,0 +1,62 @@
+## .NET
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+build/
+bld/
+[Bb]in[Oo]bj/
+[Aa]pp[Pp]ackages/*
+!/[Aa]pp[Pp]ackages/[Mm]aintainability.txt
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## IDE
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+## Build
+*.dll
+*.exe
+*.pdb
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+## Test
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+
+## OS
+.DS_Store
+Thumbs.db

@@ -1,5 +1,0 @@
-{
-  "AuthService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Proyectos Visual\\E-Commerce Microservices\\services\\auth-service",
-  "InventoryService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Proyectos Visual\\E-Commerce Microservices\\services\\inventory-service",
-  "PaymentService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Proyectos Visual\\E-Commerce Microservices\\services\\payment-service"
-}
