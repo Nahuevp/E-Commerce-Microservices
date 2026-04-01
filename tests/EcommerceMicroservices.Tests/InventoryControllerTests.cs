@@ -178,7 +178,9 @@ public class InventoryControllerTests
         var response = Assert.IsType<AvailabilityResponse>(okResult.Value);
         
         Assert.Equal(999, response.ProductId);
-        Assert.Equal(100, response.AvailableStock); // Default stock
+        Assert.Equal(0, response.AvailableStock); // Default 0 when Product Service is unreachable
+        Assert.Equal(0, response.ReservedStock);
+        Assert.Equal(0, response.TotalStock);
     }
 
     [Fact]

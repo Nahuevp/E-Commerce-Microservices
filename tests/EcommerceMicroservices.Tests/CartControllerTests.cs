@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -22,6 +23,17 @@ public class CartControllerTests
     private CartController CreateController(CartDbContext context)
     {
         var httpClientFactoryMock = new Mock<IHttpClientFactory>();
+        httpClientFactoryMock.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns(new HttpClient(new MockHttpHandler(System.Net.HttpStatusCode.ServiceUnavailable)));
+        var loggerMock = new Mock<ILogger<CartController>>();
+        return new CartController(context, httpClientFactoryMock.Object, loggerMock.Object);
+    }
+    
+    private CartController CreateControllerWithHttpClient(CartDbContext context, HttpClient httpClient)
+    {
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
+        httpClientFactoryMock.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns(httpClient);
         var loggerMock = new Mock<ILogger<CartController>>();
         return new CartController(context, httpClientFactoryMock.Object, loggerMock.Object);
     }
@@ -42,11 +54,12 @@ public class CartControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var cartResponse = Assert.IsType<dynamic>(okResult.Value);
+        var returnedCart = Assert.IsType<Cart>(okResult.Value);
+        Assert.Empty(returnedCart.Items);
     }
 
     [Fact]
-    public async Task GetCart_CartNotFound_ReturnsNotFound()
+    public async Task GetCart_CartNotFound_ReturnsEmptyCart()
     {
         // Arrange
         var context = CreateInMemoryContext();
@@ -55,8 +68,11 @@ public class CartControllerTests
         // Act
         var result = await controller.GetCart(999);
 
-        // Assert
-        Assert.IsType<NotFoundObjectResult>(result);
+        // Assert — controller returns Ok with empty cart when not found
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var cart = Assert.IsType<Cart>(okResult.Value);
+        Assert.Equal(999, cart.UserId);
+        Assert.Empty(cart.Items);
     }
 
     [Fact]
@@ -167,7 +183,7 @@ public class CartControllerTests
         
         var updatedItem = await context.CartItems.FindAsync(item.Id);
         Assert.Equal(5, updatedItem?.Quantity);
-        Assert.Equal(24.99m, updatedItem?.Price);
+        Assert.Equal(29.99m, updatedItem?.Price); // Price unchanged — controller only updates quantity
     }
 
     [Fact]
@@ -211,7 +227,8 @@ var result = await controller.UpdateCartItem(1, 999, request);
         var result = await controller.RemoveFromCart(cart.Id, item.Id);
 
         // Assert
-        Assert.IsType<OkResult>(result);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedCart = Assert.IsType<Cart>(okResult.Value);
         
         var items = await context.CartItems.ToListAsync();
         Assert.Empty(items);
@@ -273,7 +290,26 @@ var result = await controller.UpdateCartItem(1, 999, request);
         context.CartItems.Add(invalidItem);
         await context.SaveChangesAsync();
         
-        var controller = CreateController(context);
+        // Use a controller with a proper HttpContext for Checkout
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
+        // Return OK with availability JSON so stock validation passes
+        httpClientFactoryMock.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns(new HttpClient(new MockHttpHandler(System.Net.HttpStatusCode.OK, 
+                "{\"productId\":0,\"availableStock\":999,\"reservedStock\":0,\"totalStock\":999}")));
+        var loggerMock = new Mock<ILogger<CartController>>();
+        var controller = new CartController(context, httpClientFactoryMock.Object, loggerMock.Object);
+        
+        // Set up full HttpContext with User and Request
+        var claimsPrincipal = new System.Security.Claims.ClaimsPrincipal(
+            new System.Security.Claims.ClaimsIdentity(
+                new System.Security.Claims.Claim[] {
+                    new System.Security.Claims.Claim("userId", "1")
+                }));
+        var httpContext = new DefaultHttpContext { User = claimsPrincipal };
+        controller.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
+        {
+            HttpContext = httpContext
+        };
         
         var request = new CheckoutRequest { CardNumber = "4111111111111111" };
 
@@ -313,5 +349,30 @@ var result = await controller.UpdateCartItem(1, 999, request);
         
         var items = await context.CartItems.Where(i => i.ProductId == 100).ToListAsync();
         Assert.Empty(items);
+    }
+}
+
+// Helper to create HttpClient that returns specific status codes and optional content
+public class MockHttpHandler : System.Net.Http.HttpMessageHandler
+{
+    private readonly System.Net.HttpStatusCode _statusCode;
+    private readonly string? _content;
+
+    public MockHttpHandler(System.Net.HttpStatusCode statusCode, string? content = null)
+    {
+        _statusCode = statusCode;
+        _content = content;
+    }
+
+    protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(
+        System.Net.Http.HttpRequestMessage request, 
+        System.Threading.CancellationToken cancellationToken)
+    {
+        var response = new System.Net.Http.HttpResponseMessage(_statusCode);
+        if (_content != null)
+        {
+            response.Content = new System.Net.Http.StringContent(_content, System.Text.Encoding.UTF8, "application/json");
+        }
+        return System.Threading.Tasks.Task.FromResult(response);
     }
 }

@@ -123,10 +123,11 @@ namespace InventoryService.Controllers
                 _logger.LogWarning("Not enough stock for product {ProductId}. Available: {Available}, Needed: {Needed}", 
                     request.ProductId, inventory.AvailableStock, request.Quantity);
                 
-                return BadRequest(new { 
-                    error = "Not enough stock",
-                    available = inventory.AvailableStock,
-                    requested = request.Quantity
+                return BadRequest(new InsufficientStockResponse
+                {
+                    Error = "Not enough stock",
+                    AvailableStock = inventory.AvailableStock,
+                    RequestedQuantity = request.Quantity
                 });
             }
             
