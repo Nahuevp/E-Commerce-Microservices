@@ -1046,7 +1046,6 @@ function goToStep(step) {
 
 function renderCheckoutStep1() {
     const checkoutItems = document.getElementById('checkout-items');
-    const checkoutSubtotal = document.getElementById('checkout-subtotal');
     const checkoutTotal = document.getElementById('checkout-total');
 
     if (!currentCart?.items?.length) {
@@ -1074,8 +1073,7 @@ function renderCheckoutStep1() {
         `;
     }).join('');
 
-    checkoutSubtotal.textContent = `$${checkoutData.total.toFixed(2)}`;
-    checkoutTotal.textContent = `$${checkoutData.total.toFixed(2)}`;
+    if (checkoutTotal) checkoutTotal.textContent = `$${checkoutData.total.toFixed(2)}`;
 }
 
 async function submitPayment() {
