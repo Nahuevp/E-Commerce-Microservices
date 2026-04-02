@@ -194,13 +194,19 @@ function initCheckoutEventListeners() {
         if (e.target === checkoutModal) closeCheckoutModal();
     });
 
+    // Back to cart from step 1
+    document.getElementById('btn-back-to-cart')?.addEventListener('click', () => {
+        closeCheckoutModal();
+        openCartModal();
+    });
+
     // Wizard navigation
     document.getElementById('btn-step1-next')?.addEventListener('click', () => {
         // Update payment amount in step 2 before navigating
         const paymentAmountEl = document.getElementById('payment-amount');
-        if (paymentAmountEl) {
-            paymentAmountEl.textContent = `$${checkoutData.total.toFixed(2)}`;
-        }
+        const paymentAmountBtnEl = document.getElementById('payment-amount-btn');
+        if (paymentAmountEl) paymentAmountEl.textContent = `$${checkoutData.total.toFixed(2)}`;
+        if (paymentAmountBtnEl) paymentAmountBtnEl.textContent = `$${checkoutData.total.toFixed(2)}`;
         goToStep(2);
     });
     document.getElementById('btn-step2-prev')?.addEventListener('click', () => goToStep(1));
@@ -214,6 +220,25 @@ function initCheckoutEventListeners() {
 
 function initServiceStatusEventListeners() {
     document.getElementById('btn-refresh-status')?.addEventListener('click', checkServicesHealth);
+
+    // Service panel collapse/expand
+    const toggleBtn = document.getElementById('btn-panel-collapse');
+    const serviceListContainer = document.getElementById('services-list');
+    const statusPanelToggle = document.getElementById('status-panel-toggle');
+    let isPanelCollapsed = false;
+
+    const togglePanel = () => {
+        isPanelCollapsed = !isPanelCollapsed;
+        if (serviceListContainer) {
+            serviceListContainer.style.maxHeight = isPanelCollapsed ? '0' : '';
+            serviceListContainer.style.overflow = isPanelCollapsed ? 'hidden' : '';
+        }
+        if (toggleBtn) {
+            toggleBtn.style.transform = isPanelCollapsed ? 'rotate(180deg)' : '';
+        }
+    };
+
+    statusPanelToggle?.addEventListener('click', togglePanel);
 }
 
 // Authentication
@@ -271,8 +296,12 @@ function showDashboard(email) {
     btnOpenCart?.classList.remove('hidden');
     
     // Set user name from email (or from token)
-    if (userName && email) {
-        userName.textContent = email.split('@')[0]; // Show just the name part
+    if (email) {
+        const displayName = email.split('@')[0];
+        if (userName) userName.textContent = email; // show full email
+        // Set avatar initial
+        const initialEl = document.getElementById('user-initial');
+        if (initialEl) initialEl.textContent = displayName.charAt(0).toUpperCase();
     }
     
     // Reset to products view
@@ -401,6 +430,37 @@ async function loadProducts() {
     }
 }
 
+// Category color palettes matching V0 design
+const CATEGORY_GRADIENTS = [
+    'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',   // indigo/purple
+    'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',   // blue/indigo
+    'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',   // deep indigo
+    'linear-gradient(135deg, #10b981 0%, #059669 100%)',   // emerald
+    'linear-gradient(135deg, #f97316 0%, #ec4899 100%)',   // orange/pink
+    'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)',   // teal
+    'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',   // purple/indigo
+    'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',   // amber/orange
+    'linear-gradient(135deg, #ef4444 0%, #f97316 100%)',   // red/orange
+    'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',   // cyan/blue
+];
+
+const CATEGORY_NAMES = [
+    'Audio', 'Peripherals', 'Displays', 'Furniture',
+    'Smart Home', 'Storage', 'Accessories', 'Cameras',
+    'Lighting', 'Networking'
+];
+
+function getProductGradient(product) {
+    // Use product id to deterministically pick a gradient
+    const idx = (product.id - 1) % CATEGORY_GRADIENTS.length;
+    return CATEGORY_GRADIENTS[idx];
+}
+
+function getProductCategory(product) {
+    const idx = (product.id - 1) % CATEGORY_NAMES.length;
+    return CATEGORY_NAMES[idx];
+}
+
 function renderProducts(products) {
     // Filter out invalid products (id <= 0)
     const validProducts = products.filter(p => p.id && p.id > 0);
@@ -414,28 +474,36 @@ function renderProducts(products) {
         // Determine stock status
         const stockStatus = p.stock === 0 ? 'out-of-stock' : p.stock <= 5 ? 'low-stock' : 'in-stock';
         const stockText = p.stock === 0 ? 'Out of Stock' : p.stock <= 5 ? `Only ${p.stock} left` : `${p.stock} in stock`;
+        const gradient = getProductGradient(p);
+        const category = getProductCategory(p);
         
         return `
             <div class="product-card">
-                <div class="product-image">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                    </svg>
+                <div class="product-image" style="background: ${gradient}">
+                    <span class="product-category-badge">${category}</span>
+                    <div class="product-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                        </svg>
+                    </div>
+                    ${p.stock === 0 ? '<div class="product-out-of-stock-overlay"><span>Out of Stock</span></div>' : ''}
                 </div>
                 <div class="product-content">
                     <h3 class="product-name">${escapeHtml(p.name)}</h3>
-                    <p class="product-price">$${p.price.toFixed(2)}</p>
                     <p class="product-stock ${stockStatus}">
                         <span class="stock-dot"></span>
                         ${stockText}
                     </p>
                     <div class="product-actions">
+                        <p class="product-price">$${p.price.toFixed(2)}</p>
                         <button onclick="addToCart(${p.id}, ${p.price})" class="btn-add-cart" ${p.stock === 0 ? 'disabled' : ''}>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                             </svg>
                             Add to Cart
                         </button>
+                    </div>
+                    <div class="product-edit-actions">
                         <button onclick="editProduct(${p.id}, '${escapeHtml(p.name).replace(/'/g, "\\'")}', ${p.price}, ${p.stock})" class="btn secondary small">✏️</button>
                         <button onclick="deleteProduct(${p.id})" class="btn secondary small btn-danger">🗑️</button>
                     </div>
@@ -562,6 +630,10 @@ function renderOrders(orders) {
         return;
     }
 
+    // Show orders count
+    const ordersCountEl = document.getElementById('orders-count');
+    if (ordersCountEl) ordersCountEl.textContent = `${orders.length} orders total`;
+
     // Sort by date (newest first)
     orders.sort((a, b) => b.id - a.id);
 
@@ -571,6 +643,11 @@ function renderOrders(orders) {
         if (order.status === 'Completed' || order.status === 'completed') return 'completed';
         if (order.status === 'Processing' || order.status === 'processing') return 'processing';
         return 'pending';
+    };
+
+    const getStatusLabel = (order) => {
+        const s = order.status || 'Pending';
+        return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
     };
 
     // Format date
@@ -583,23 +660,71 @@ function renderOrders(orders) {
         });
     };
 
+    // Generate a short TXN-like code from order id
+    const getTxnId = (orderId) => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let hash = orderId * 7919;
+        let result = 'TXN-';
+        for (let i = 0; i < 8; i++) {
+            result += chars[hash % chars.length];
+            hash = Math.floor(hash / chars.length) + orderId;
+        }
+        return result.substring(0, 12);
+    };
+
+    // Build order ID display (ORD-XXXXX format)
+    const getOrderIdDisplay = (id) => `ORD-${String(id).padStart(5, '0')}`;
+
+    // Determine product names from globalProducts
+    const getItemsHtml = (order) => {
+        if (order.items && order.items.length) {
+            return order.items.map(item => {
+                const product = globalProducts.find(p => p.id == item.productId);
+                const name = product ? escapeHtml(product.name) : `Product #${item.productId}`;
+                return `<div class="order-item-row">
+                    <svg class="order-item-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                    </svg>
+                    <span>${name}</span>
+                    <span class="order-item-qty">x${item.quantity}</span>
+                </div>`;
+            }).join('');
+        }
+        // Legacy: single product from order fields
+        const product = globalProducts.find(p => p.id == order.productId);
+        const name = product ? escapeHtml(product.name) : `Product #${order.productId}`;
+        return `<div class="order-item-row">
+            <svg class="order-item-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+            <span>${name}</span>
+            <span class="order-item-qty">x${order.quantity || 1}</span>
+        </div>`;
+    };
+
     ordersList.innerHTML = orders.map(o => `
         <div class="order-card">
             <div class="order-header">
-                <div>
-                    <div class="order-id">Order #${o.id}</div>
-                    <div class="order-date">${o.createdAt ? formatDate(o.createdAt) : 'Recent'}</div>
+                <div class="order-header-left">
+                    <div class="order-id-row">
+                        <span class="order-id">${getOrderIdDisplay(o.id)}</span>
+                        <span class="order-status ${getStatus(o)}">
+                            <span class="order-status-dot"></span>
+                            ${getStatusLabel(o)}
+                        </span>
+                        ${getStatus(o) === 'pending' || getStatus(o) === 'processing' ? 
+                            `<button onclick="deleteOrder(${o.id})" class="btn-cancel-order">Cancel</button>` 
+                            : ''}
+                    </div>
+                    <div class="order-txn-id">${getTxnId(o.id)}</div>
                 </div>
-                <span class="order-status ${getStatus(o)}">${o.status || 'Pending'}</span>
+                <div class="order-header-right">
+                    <span class="order-total">$${o.totalPrice?.toFixed(2) || '0.00'}</span>
+                    <span class="order-date">${o.createdAt ? formatDate(o.createdAt) : 'Recent'}</span>
+                </div>
             </div>
-            <div class="order-items-summary">
-                Product ID: ${o.productId} | Qty: ${o.quantity}
-            </div>
-            <div class="order-footer">
-                <span class="order-total">$${o.totalPrice?.toFixed(2) || '0.00'}</span>
-                ${getStatus(o) === 'pending' || getStatus(o) === 'processing' ? 
-                    `<button onclick="deleteOrder(${o.id})" class="btn secondary small btn-danger">Cancel</button>` 
-                    : ''}
+            <div class="order-items-list">
+                ${getItemsHtml(o)}
             </div>
         </div>
     `).join('');
@@ -812,8 +937,14 @@ function renderCart() {
     cartItemsContainer.innerHTML = currentCart.items.map(item => {
         const product = globalProducts.find(p => p.id == item.productId);
         const name = product ? escapeHtml(product.name) : `Product #${item.productId}`;
+        const gradient = product ? getProductGradient(product) : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
         return `
         <div class="cart-item">
+            <div class="cart-item-thumb" style="background: ${gradient}">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+            </div>
             <div class="cart-item-info">
                 <span class="cart-item-name">${name}</span>
                 <span class="cart-item-price">$${item.price.toFixed(2)}</span>
@@ -824,8 +955,11 @@ function renderCart() {
                     <span class="quantity-value">${item.quantity}</span>
                     <button onclick="updateCartItemQuantity(${item.id}, ${item.quantity + 1})" class="btn-qty">+</button>
                 </div>
-                <span class="cart-item-subtotal">$${(item.price * item.quantity).toFixed(2)}</span>
-                <button onclick="removeFromCart(${item.id})" class="btn-remove">×</button>
+                <button onclick="removeFromCart(${item.id})" class="btn-remove" title="Remove item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                </button>
             </div>
         </div>
         `;
@@ -833,6 +967,14 @@ function renderCart() {
 
     const total = currentCart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     cartTotalPrice.textContent = `$${total.toFixed(2)}`;
+
+    // Update cart header count badge
+    const cartHeaderCount = document.getElementById('cart-header-count');
+    const itemCount = currentCart.items.reduce((sum, item) => sum + item.quantity, 0);
+    if (cartHeaderCount) {
+        cartHeaderCount.textContent = `${itemCount} Item${itemCount !== 1 ? 's' : ''}`;
+        cartHeaderCount.classList.remove('hidden');
+    }
 }
 
 function updateCartItemQuantity(itemId, newQuantity) {
@@ -915,11 +1057,17 @@ function renderCheckoutStep1() {
     checkoutItems.innerHTML = currentCart.items.map(item => {
         const product = globalProducts.find(p => p.id == item.productId);
         const name = product ? escapeHtml(product.name) : `Product #${item.productId}`;
+        const gradient = product ? getProductGradient(product) : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
         return `
         <div class="checkout-item">
+            <div class="checkout-item-thumb" style="background: ${gradient}">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+            </div>
             <div class="checkout-item-info">
                 <span class="checkout-item-name">${name}</span>
-                <span class="checkout-item-qty">x${item.quantity}</span>
+                <span class="checkout-item-qty">Qty: ${item.quantity}</span>
             </div>
             <span class="checkout-item-price">$${(item.price * item.quantity).toFixed(2)}</span>
         </div>
@@ -1043,10 +1191,46 @@ async function checkServicesHealth() {
 }
 
 function renderServiceStatus(services) {
+    const onlineCount = services.filter(s => s.status === 'healthy').length;
+    const total = services.length;
+    const allHealthy = onlineCount === total;
+
+    // Update panel header count
+    const countEl = document.getElementById('service-count');
+    if (countEl) {
+        countEl.textContent = `${onlineCount}/${total}`;
+        countEl.className = allHealthy ? 'service-count healthy' : 'service-count degraded';
+    }
+
+    // Update the panel indicator dot
+    const panelDot = document.getElementById('service-panel-dot');
+    if (panelDot) {
+        panelDot.className = allHealthy ? 'service-panel-dot healthy' : 'service-panel-dot degraded';
+    }
+
+    const getStatusLabel = (status) => {
+        if (status === 'healthy') return 'Online';
+        if (status === 'degraded') return 'Degraded';
+        if (status === 'timeout') return 'Timeout';
+        return 'Down';
+    };
+
+    const getServiceDisplayName = (name) => {
+        const map = {
+            'product-service': 'Product API',
+            'order-service': 'Order Service',
+            'cart-service': 'Cart Service',
+            'payment-service': 'Payment Gateway',
+            'notification-service': 'Notification Service',
+            'inventory-service': 'Auth Service',
+        };
+        return map[name] || name.replace('-service', ' Service');
+    };
+
     servicesList.innerHTML = services.map(service => `
         <div class="service-item" data-service="${service.name}">
-            <span class="service-icon">${service.icon}</span>
-            <span class="service-name">${service.name.replace('-service', '')}</span>
+            <span class="service-name">${getServiceDisplayName(service.name)}</span>
+            <span class="service-status-label ${service.status}">${getStatusLabel(service.status)}</span>
             <span class="service-indicator ${service.status}"></span>
         </div>
     `).join('');
