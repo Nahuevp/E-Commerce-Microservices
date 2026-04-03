@@ -112,3 +112,8 @@ Variables de entorno necesarias:
 - `DATABASE_URL` — URL de PostgreSQL (formato `postgres://user:pass@host:port/db`)
 - `JWT_KEY` — Clave secreta para JWT (mínimo 32 bytes)
 
+---
+
+👨‍💻 Autor
+
+Desarrollado por Nahuevp Proyecto personal orientado a portfolio y crecimiento profesional.
