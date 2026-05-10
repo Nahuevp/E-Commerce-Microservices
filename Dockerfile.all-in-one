@@ -56,6 +56,12 @@ RUN apk add --no-cache procps curl
 # on Alpine images by skipping ICU library initialization (not needed for APIs)
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
+# Memory optimizations for Free Tier (512MB limit)
+# Workstation GC uses significantly less memory than Server GC
+ENV DOTNET_gcServer=0
+# Tell GC to be aggressive about conserving memory
+ENV DOTNET_GCConserveMemory=5
+
 WORKDIR /app
 
 # Copy all published services
