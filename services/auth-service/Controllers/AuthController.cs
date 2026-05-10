@@ -25,19 +25,30 @@ namespace AuthService.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] User loginUser)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == loginUser.Email))
-                return BadRequest("User already exists.");
-
-            var user = new User
+            try
             {
-                Email = loginUser.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(loginUser.PasswordHash)
-            };
+                if (await _context.Users.AnyAsync(u => u.Email == loginUser.Email))
+                    return BadRequest("User already exists.");
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+                var user = new User
+                {
+                    Email = loginUser.Email,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(loginUser.PasswordHash)
+                };
 
-            return Ok(new { Message = "User registered successfully" });
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Message = "User registered successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { 
+                    Error = "Database Error", 
+                    Message = ex.Message, 
+                    Inner = ex.InnerException?.Message 
+                });
+            }
         }
 
         [HttpPost("login")]
