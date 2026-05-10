@@ -43,11 +43,9 @@ namespace AuthService.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { 
-                    Error = "Database Error", 
-                    Message = ex.Message, 
-                    Inner = ex.InnerException?.Message 
-                });
+                // Log internally but never expose DB details to the client
+                Console.WriteLine($"Register error: {ex.Message}");
+                return StatusCode(500, new { Error = "Registration failed. Please try again." });
             }
         }
 
@@ -89,6 +87,7 @@ namespace AuthService.Controllers
         }
 
         [HttpGet("users")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "admin")]
         public async Task<IActionResult> GetUsers()
         {
             var users = await _context.Users.Select(u => new { u.Id, u.Email }).ToListAsync();

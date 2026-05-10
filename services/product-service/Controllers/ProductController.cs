@@ -106,10 +106,10 @@ namespace ProductService.Controllers
 
         /// <summary>
         /// Update stock by delta (positive = add, negative = subtract)
-        /// PUT /products/{id}/stock
+        /// PUT /products/{id}/stock — used internally by checkout flow
         /// </summary>
         [HttpPut("{id}/stock")]
-        [AllowAnonymous]
+        [Authorize]
         public async Task<IActionResult> UpdateStock(int id, [FromBody] StockUpdateRequest request)
         {
             var product = await _context.Products.FindAsync(id);
