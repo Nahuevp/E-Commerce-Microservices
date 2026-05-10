@@ -62,12 +62,24 @@ namespace AuthService.Controllers
             var keyStr = _config["Jwt:Key"];
             if (string.IsNullOrEmpty(keyStr)) return StatusCode(500, "JWT Key not configured");
             var key = Encoding.ASCII.GetBytes(keyStr);
+
+            var claims = new List<Claim>
+            {
+                new Claim("id", user.Id.ToString()),
+                new Claim("userId", user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email)
+            };
+
+            // Verificar si es Admin via Variable de Entorno
+            var adminEmail = _config["ADMIN_EMAIL"];
+            if (!string.IsNullOrEmpty(adminEmail) && user.Email.Equals(adminEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "admin"));
+            }
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[] { 
-                    new Claim("id", user.Id.ToString()),
-                    new Claim("userId", user.Id.ToString())
-                }),
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddDays(7),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };

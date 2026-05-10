@@ -36,7 +36,7 @@ namespace ProductService.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> CreateProduct([FromBody] Product product)
         {
             _context.Products.Add(product);
@@ -45,7 +45,7 @@ namespace ProductService.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product productUpdated)
         {
             var product = await _context.Products.FindAsync(id);
@@ -80,7 +80,7 @@ namespace ProductService.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             var product = await _context.Products.FindAsync(id);
