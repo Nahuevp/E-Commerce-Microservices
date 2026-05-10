@@ -350,14 +350,15 @@ function getEmailFromToken(token) {
     }
 }
 
-function getUserId() {
+function isAdmin() {
     const token = localStorage.getItem(tokenKey);
-    if (!token) return null;
+    if (!token) return false;
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.id || payload.userId || null;
+        // Check for role claim (Standard .NET ClaimTypes.Role maps to 'role' or a long URL string)
+        return payload.role === 'admin' || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] === 'admin';
     } catch (e) {
-        return null; // Don't fallback to 1 - require login
+        return false;
     }
 }
 
@@ -384,6 +385,15 @@ function showDashboard(email) {
     userInfo?.classList.remove('hidden');
     btnOpenCart?.classList.remove('hidden');
     
+    // Show/Hide Add Product button based on admin status
+    if (btnToggleAddProduct) {
+        if (isAdmin()) {
+            btnToggleAddProduct.classList.remove('hidden');
+        } else {
+            btnToggleAddProduct.classList.add('hidden');
+        }
+    }
+
     // Set user name from email (or from token)
     if (email) {
         const displayName = email.split('@')[0];
@@ -555,7 +565,24 @@ function renderProducts(products) {
     const validProducts = products.filter(p => p.id && p.id > 0);
     
     if (validProducts.length === 0) {
-        productsList.innerHTML = '<p>No products available. Add some directly to the DB!</p>';
+        if (isAdmin()) {
+            productsList.innerHTML = `
+                <div class="empty-state-card admin-seed-card">
+                    <div class="empty-state-icon">🚀</div>
+                    <h3>Database is empty</h3>
+                    <p>As an administrator, you can seed the initial product catalog with one click.</p>
+                    <button onclick="seedDatabase()" class="btn-seed">Seed Demo Data</button>
+                </div>
+            `;
+        } else {
+            productsList.innerHTML = `
+                <div class="empty-state-card">
+                    <div class="empty-state-icon">📦</div>
+                    <h3>No products found</h3>
+                    <p>Wait for the administrator to populate the catalog.</p>
+                </div>
+            `;
+        }
         return;
     }
 
@@ -606,6 +633,39 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+async function seedDatabase() {
+    const btn = document.querySelector('.btn-seed');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Seeding...';
+    }
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE}/api/products/seed`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            showToast('Database seeded successfully!', 'success');
+            loadProducts();
+        } else {
+            const err = await response.json();
+            showToast(`Seed failed: ${err.Message || 'Unknown error'}`, 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Seed Demo Data';
+            }
+        }
+    } catch (error) {
+        showToast('Connection error during seeding.', 'error');
+        console.error(error);
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Seed Demo Data';
+        }
+    }
 }
 
 async function handleAddProduct(e) {

@@ -137,6 +137,29 @@ namespace ProductService.Controllers
             await _context.SaveChangesAsync();
             return Ok(product);
         }
+        [HttpPost("seed")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> SeedProducts()
+        {
+            if (await _context.Products.AnyAsync())
+                return BadRequest("Database already has products.");
+
+            var products = new List<Product>
+            {
+                new Product { Name = "Mechanical Keyboard RGB", Price = 89.99m, Stock = 50, Description = "Professional mechanical keyboard with blue switches." },
+                new Product { Name = "Gaming Mouse 12000 DPI", Price = 45.50m, Stock = 100, Description = "Ergonomic gaming mouse." },
+                new Product { Name = "UltraWide Monitor 34\"", Price = 450.00m, Stock = 15, Description = "Curved monitor for productivity." },
+                new Product { Name = "Wireless Headphones", Price = 120.00m, Stock = 30, Description = "Noise-cancelling headphones." },
+                new Product { Name = "USB-C Hub 7-in-1", Price = 35.00m, Stock = 200, Description = "Aluminum hub with HDMI." },
+                new Product { Name = "Developer Hoodie", Price = 55.00m, Stock = 40, Description = "Premium cotton hoodie." },
+                new Product { Name = "Standing Desk", Price = 320.00m, Stock = 10, Description = "Electric height-adjustable desk." }
+            };
+
+            _context.Products.AddRange(products);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Database seeded successfully", Count = products.Count });
+        }
     }
 
     public class StockUpdateRequest
