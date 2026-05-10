@@ -362,6 +362,17 @@ function isAdmin() {
     }
 }
 
+function getUserId() {
+    const token = localStorage.getItem(tokenKey);
+    if (!token) return null;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.id || payload.userId || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 // UI State Management
 function showAuth() {
     authSection.classList.remove('hidden');
@@ -619,10 +630,12 @@ function renderProducts(products) {
                             Add to Cart
                         </button>
                     </div>
+                    ${isAdmin() ? `
                     <div class="product-edit-actions">
                         <button onclick="editProduct(${p.id}, '${escapeHtml(p.name).replace(/'/g, "\\'")}', ${p.price}, ${p.stock})" class="btn secondary small">✏️</button>
                         <button onclick="deleteProduct(${p.id})" class="btn secondary small btn-danger">🗑️</button>
                     </div>
+                    ` : ''}
                 </div>
             </div>
         `;
