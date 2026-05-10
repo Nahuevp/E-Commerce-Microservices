@@ -6,6 +6,94 @@ const HEALTH_CHECK_TIMEOUT = 5000;
 const SERVICE_REFRESH_INTERVAL = 30000;
 const TOAST_AUTO_HIDE_DELAY = 5000;
 
+// ==================== WARM-UP SPLASH SCREEN ====================
+// Render free tier goes to sleep after 15min of inactivity.
+// This splash polls the API until it responds, then reveals the app.
+
+const WARMUP_POLL_INTERVAL = 3000;   // ms between health polls
+const WARMUP_MAX_WAIT = 90000;        // 90s max before giving up
+
+async function isApiAlive() {
+    try {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch('/api/products/health', { signal: controller.signal });
+        clearTimeout(tid);
+        return res.ok;
+    } catch {
+        return false;
+    }
+}
+
+async function runWarmupSplash() {
+    // Check immediately — if already alive (local dev or warm), skip splash
+    const alreadyAlive = await isApiAlive();
+    if (alreadyAlive) return;
+
+    // Show splash
+    const splash = document.getElementById('warmup-splash');
+    if (!splash) return;
+    splash.classList.remove('hidden');
+
+    const statusEl = document.getElementById('warmup-status');
+    const timerEl  = document.getElementById('warmup-timer');
+    const barEl    = document.getElementById('warmup-bar');
+    const dotsEl   = document.getElementById('warmup-dots');
+
+    let elapsed = 0;
+    let dots = 0;
+
+    const dotsInterval = setInterval(() => {
+        dots = (dots + 1) % 4;
+        if (dotsEl) dotsEl.textContent = '.'.repeat(dots);
+    }, 500);
+
+    const start = Date.now();
+
+    while (elapsed < WARMUP_MAX_WAIT) {
+        await new Promise(r => setTimeout(r, WARMUP_POLL_INTERVAL));
+        elapsed = Date.now() - start;
+
+        const pct = Math.min((elapsed / WARMUP_MAX_WAIT) * 100, 95);
+        if (barEl) barEl.style.width = `${pct}%`;
+        if (timerEl) timerEl.textContent = `${Math.ceil(elapsed / 1000)}s`;
+
+        const alive = await isApiAlive();
+        if (alive) {
+            clearInterval(dotsInterval);
+            // Complete the bar and show success
+            if (statusEl) statusEl.textContent = 'All systems ready!';
+            if (dotsEl) dotsEl.textContent = '';
+            if (barEl) barEl.style.width = '100%';
+            if (barEl) barEl.classList.add('complete');
+            await new Promise(r => setTimeout(r, 700));
+            splash.classList.add('hiding');
+            await new Promise(r => setTimeout(r, 500));
+            splash.classList.add('hidden');
+            return;
+        }
+
+        // Update status message based on elapsed time
+        if (statusEl) {
+            if (elapsed < 15000) {
+                statusEl.textContent = 'Waking up microservices';
+            } else if (elapsed < 40000) {
+                statusEl.textContent = 'Initializing databases';
+            } else if (elapsed < 70000) {
+                statusEl.textContent = 'Almost there';
+            } else {
+                statusEl.textContent = 'Taking longer than usual';
+            }
+        }
+    }
+
+    // Timeout — hide anyway and let the app handle errors normally
+    clearInterval(dotsInterval);
+    splash.classList.add('hiding');
+    await new Promise(r => setTimeout(r, 500));
+    splash.classList.add('hidden');
+}
+
 // Service endpoints for health checks (relative URLs - works with nginx)
 const SERVICES_CONFIG = [
     { name: 'product-service', url: '/api/products/health', icon: '📦' },
@@ -64,7 +152,8 @@ const serviceStatusPanel = document.getElementById('service-status');
 const toastContainer = document.getElementById('toast-container');
 
 // Initialization
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await runWarmupSplash();
     checkAuth();
     initEventListeners();
     initCartEventListeners();

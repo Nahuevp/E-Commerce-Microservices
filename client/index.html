@@ -29,6 +29,59 @@
     </script>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
+
+    <!-- Warm-up Splash Screen (shown only when Render free tier is sleeping) -->
+    <div id="warmup-splash" class="hidden warmup-overlay">
+        <div class="warmup-card">
+            <!-- Animated logo -->
+            <div class="warmup-logo">
+                <div class="warmup-logo-inner">
+                    <span>M</span>
+                </div>
+                <div class="warmup-logo-ring"></div>
+            </div>
+
+            <h1 class="warmup-title">MicroShop</h1>
+            <p class="warmup-subtitle">E-Commerce Microservices Platform</p>
+
+            <!-- Status message -->
+            <div class="warmup-status-row">
+                <span id="warmup-status" class="warmup-status-text">Waking up microservices</span><span id="warmup-dots" class="warmup-dots">.</span>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="warmup-bar-track">
+                <div id="warmup-bar" class="warmup-bar-fill"></div>
+            </div>
+
+            <!-- Timer -->
+            <p class="warmup-timer-text">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="warmup-timer">0s</span> elapsed
+            </p>
+
+            <!-- Service pills -->
+            <div class="warmup-services">
+                <span class="warmup-pill">Auth</span>
+                <span class="warmup-pill">Products</span>
+                <span class="warmup-pill">Orders</span>
+                <span class="warmup-pill">Cart</span>
+                <span class="warmup-pill">Payment</span>
+                <span class="warmup-pill">Inventory</span>
+            </div>
+
+            <!-- Render notice -->
+            <p class="warmup-notice">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                Hosted on Render free tier — first load may take ~30s
+            </p>
+        </div>
+    </div>
+
     <div id="app">
         <!-- Header -->
         <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">

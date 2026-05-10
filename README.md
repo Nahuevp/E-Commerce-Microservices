@@ -4,7 +4,9 @@ Aplicación de e-commerce con arquitectura de microservicios en .NET 10, Postgre
 
 **Live demo**: https://ecommerce-microservices-ow4d.onrender.com
 
-> Render free tier entra en sleep tras 15 min de inactividad. El primer request puede tardar ~30s.
+> **Render free tier**: El contenedor entra en sleep tras 15 min de inactividad. El primer request despierta todos los servicios (~30s). La app incluye una splash screen animada de warm-up que muestra el estado de inicialización en tiempo real.
+
+> **Keep-alive**: Para mantenerlo despierto durante demos, usar [UptimeRobot](https://uptimerobot.com) con un monitor HTTP gratuito apuntando a `https://ecommerce-microservices-ow4d.onrender.com/api/products/health` cada 5 minutos.
 
 ---
 
